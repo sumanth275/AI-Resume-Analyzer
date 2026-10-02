@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Analyze Resume | AI Resume Analyzer{% endblock %}
+
+{% block content %}
+<div class="upload-container">
+    <div class="page-title text-center">
+        <h1><i class="fa-solid fa-wand-magic-sparkles text-primary"></i> Resume & Job Matcher</h1>
+        <p>Upload your PDF resume, paste the target job description, and let AI calculate the match score</p>
+    </div>
+
+    <div class="card upload-card">
+        <form action="{{ url_for('analysis.analyze') }}" method="POST" enctype="multipart/form-data" id="match-form">
+            
+            <!-- Step 1: Select or Upload Resume -->
+            <div class="form-section">
+                <div class="section-title">
+                    <span class="step-badge">1</span>
+                    <h3>Select or Upload Resume (.PDF)</h3>
+                </div>
+
+                {% if resumes %}
+                    <div class="resume-source-tabs">
+                        <label class="source-tab">
+                            <input type="radio" name="resume_source" value="existing" {% if selected_resume_id or not request.args.get('new') %}checked{% endif %} id="radio-existing" onclick="toggleResumeSource('existing')">
+                            <span class="tab-content"><i class="fa-solid fa-folder-open"></i> Pick Uploaded Resume</span>
+                        </label>
+                        <label class="source-tab">
+                            <input type="radio" name="resume_source" value="new" {% if not selected_resume_id and request.args.get('new') %}checked{% endif %} id="radio-new" onclick="toggleResumeSource('new')">
+                            <span class="tab-content"><i class="fa-solid fa-file-upload"></i> Upload New PDF File</span>
+                        </label>
+                    </div>
+
+                    <div id="existing-resume-select" class="source-panel mt-3">
+                        <label for="existing_resume_id" class="form-label">Choose Saved Resume:</label>
+                        <select name="existing_resume_id" id="existing_resume_id" class="form-control">
+                            {% for r in resumes %}
+                                <option value="{{ r.id }}" {% if selected_resume_id == r.id %}selected{% endif %}>
+                                    📄 {{ r.filename }} (Uploaded: {{ r.uploaded_at[:10] }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                {% endif %}
+
+                <div id="new-resume-upload" class="source-panel mt-3" {% if resumes and not (not selected_resume_id and request.args.get('new')) %}style="display: none;"{% endif %}>
+                    <div class="drop-zone" id="drop-zone">
+                        <i class="fa-solid fa-cloud-arrow-up drop-icon"></i>
+                        <div class="drop-text">Drag & drop your PDF resume here</div>
+                        <div class="drop-subtext">or click to browse from computer (Max 16MB)</div>
+                        <input type="file" name="resume_file" id="resume_file" accept=".pdf" class="file-input">
+                    </div>
+                    <div id="file-details" class="file-details" style="display: none;">
+                        <i class="fa-solid fa-file-pdf text-danger fa-2x"></i>
+                        <div class="file-name-display" id="file-name-display">resume.pdf</div>
+                        <button type="button" class="btn-icon text-muted" id="remove-file-btn" title="Remove file"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Target Job Details -->
+            <div class="form-section">
+                <div class="section-title">
+                    <span class="step-badge">2</span>
+                    <h3>Target Job Description</h3>
+                </div>
+
+                <div class="form-group">
+                    <label for="job_title"><i class="fa-solid fa-briefcase"></i> Job Title / Role Name (Optional)</label>
+                    <input type="text" id="job_title" name="job_title" placeholder="e.g. Full-Stack Python Developer, Data Scientist, DevOps Engineer" class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label for="job_description"><i class="fa-solid fa-file-lines"></i> Paste Job Description & Requirements *</label>
+                    <textarea id="job_description" name="job_description" rows="8" placeholder="Paste the complete job description, required skills, duties, and qualifications here..." required class="form-control"></textarea>
+                </div>
+            </div>
+
+            <!-- Step 3: Action Button -->
+            <div class="form-actions text-center">
+                <button type="submit" id="submit-btn" class="btn btn-primary btn-lg btn-analyze">
+                    <i class="fa-solid fa-brain"></i> <span id="btn-text">ANALYZE RESUME</span>
+                    <i class="fa-solid fa-spinner fa-spin" id="loading-spinner" style="display: none;"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+{% endblock %}

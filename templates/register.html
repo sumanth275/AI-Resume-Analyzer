@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Register Account | AI Resume Analyzer{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-header text-center">
+            <div class="auth-brand-icon">
+                <i class="fa-solid fa-user-plus"></i>
+            </div>
+            <h2>Create Your Account</h2>
+            <p>Start matching your resume to job descriptions with AI</p>
+        </div>
+
+        <form action="{{ url_for('auth.register') }}" method="POST" class="auth-form">
+            <div class="form-group">
+                <label for="name"><i class="fa-solid fa-user"></i> Full Name</label>
+                <input type="text" id="name" name="name" value="{{ name if name else '' }}" placeholder="John Doe" required class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label for="email"><i class="fa-solid fa-envelope"></i> Email Address</label>
+                <input type="email" id="email" name="email" value="{{ email if email else '' }}" placeholder="name@example.com" required class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label for="password"><i class="fa-solid fa-key"></i> Password</label>
+                <input type="password" id="password" name="password" placeholder="At least 6 characters" required class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password"><i class="fa-solid fa-shield-check"></i> Confirm Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter password" required class="form-control">
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-lg">
+                <i class="fa-solid fa-user-check"></i> Create Account
+            </button>
+        </form>
+
+        <div class="auth-footer text-center">
+            <p>Already have an account? <a href="{{ url_for('auth.login') }}">Log In</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

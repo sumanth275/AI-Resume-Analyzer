@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AI Resume Analyzer & Job Matcher{% endblock %}</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <!-- Navigation Header -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('index') }}" class="nav-brand">
+                <i class="fa-solid fa-robot brand-icon"></i>
+                <span class="brand-text">Resume<span class="brand-highlight">AI</span></span>
+            </a>
+
+            <div class="nav-menu">
+                {% if session.get('user_id') %}
+                    <a href="{{ url_for('analysis.dashboard') }}" class="nav-link {% if request.endpoint == 'analysis.dashboard' %}active{% endif %}">
+                        <i class="fa-solid fa-gauge-high"></i> Dashboard
+                    </a>
+                    <a href="{{ url_for('analysis.upload_page') }}" class="nav-link btn-nav-action {% if request.endpoint == 'analysis.upload_page' %}active{% endif %}">
+                        <i class="fa-solid fa-file-circle-plus"></i> Analyze Resume
+                    </a>
+                    <div class="user-dropdown">
+                        <span class="user-name"><i class="fa-solid fa-circle-user"></i> {{ session.get('user_name') }}</span>
+                        <a href="{{ url_for('auth.logout') }}" class="nav-link nav-logout" title="Logout">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                        </a>
+                    </div>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="nav-link {% if request.endpoint == 'auth.login' %}active{% endif %}">Login</a>
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary nav-btn">Get Started</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages Container -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-messages-container">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">
+              <div class="alert-content">
+                <i class="fa-solid {% if category == 'success' %}fa-circle-check{% elif category == 'danger' %}fa-circle-xmark{% elif category == 'warning' %}fa-triangle-exclamation{% else %}fa-circle-info{% endif %}"></i>
+                <span>{{ message }}</span>
+              </div>
+              <button type="button" class="alert-close" onclick="this.parentElement.remove();">&times;</button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Main Body Content -->
+    <main class="main-content">
+        {% if content_override %}
+            {{ content_override | safe }}
+        {% else %}
+            {% block content %}{% endblock %}
+        {% endif %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <p>&copy; 2026 AI Resume Analyzer & Job Matcher. Built with Python, Flask, PyMuPDF & Scikit-learn.</p>
+        </div>
+    </footer>
+
+    <!-- Main JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

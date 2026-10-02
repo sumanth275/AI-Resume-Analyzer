@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}User Dashboard | AI Resume Analyzer{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrapper">
+    <div class="dashboard-header">
+        <div>
+            <h1><i class="fa-solid fa-gauge-high text-primary"></i> Dashboard</h1>
+            <p>Overview of your uploaded resumes and job match analyses</p>
+        </div>
+        <a href="{{ url_for('analysis.upload_page') }}" class="btn btn-primary btn-lg">
+            <i class="fa-solid fa-plus-circle"></i> New Job Match Analysis
+        </a>
+    </div>
+
+    <!-- Stats Summary Row -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon bg-indigo-light">
+                <i class="fa-solid fa-file-pdf"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-value">{{ total_resumes }}</span>
+                <span class="stat-label">Uploaded Resumes</span>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon bg-emerald-light">
+                <i class="fa-solid fa-chart-pie"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-value">{{ total_analyses }}</span>
+                <span class="stat-label">Analyses Completed</span>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon bg-purple-light">
+                <i class="fa-solid fa-bullseye"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-value">{{ avg_match_score }}%</span>
+                <span class="stat-label">Avg Job Match Score</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Columns -->
+    <div class="dashboard-grid">
+        <!-- Analyses History Table -->
+        <div class="card grid-span-2">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-history"></i> Recent Match Analyses</h3>
+            </div>
+            <div class="card-body p-0">
+                {% if analyses %}
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Job Role</th>
+                                    <th>Resume File</th>
+                                    <th>Match Score</th>
+                                    <th>Date</th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in analyses %}
+                                <tr>
+                                    <td><strong>{{ item.job_title }}</strong></td>
+                                    <td><i class="fa-regular fa-file-pdf text-danger"></i> {{ item.filename }}</td>
+                                    <td>
+                                        <span class="score-badge {% if item.match_score >= 75 %}score-high{% elif item.match_score >= 50 %}score-mid{% else %}score-low{% endif %}">
+                                            {{ item.match_score }}%
+                                        </span>
+                                    </td>
+                                    <td><small class="text-muted">{{ item.created_at[:10] }}</small></td>
+                                    <td class="text-right action-cells">
+                                        <a href="{{ url_for('analysis.result', analysis_id=item.id) }}" class="btn btn-sm btn-outline-primary" title="View Results">
+                                            <i class="fa-solid fa-eye"></i> View
+                                        </a>
+                                        <a href="{{ url_for('analysis.download_report', analysis_id=item.id) }}" class="btn btn-sm btn-outline-secondary" title="Download Report">
+                                            <i class="fa-solid fa-download"></i> PDF
+                                        </a>
+                                        <form action="{{ url_for('analysis.delete_analysis', analysis_id=item.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this analysis report?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fa-solid fa-magnifying-glass-chart empty-icon"></i>
+                        <p>No analyses performed yet.</p>
+                        <a href="{{ url_for('analysis.upload_page') }}" class="btn btn-primary">Start Your First Match Analysis</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Uploaded Resumes Sidebar -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-folder-open"></i> Uploaded Resumes</h3>
+            </div>
+            <div class="card-body">
+                {% if resumes %}
+                    <ul class="resume-list">
+                        {% for r in resumes %}
+                            <li class="resume-item">
+                                <div class="resume-file-info">
+                                    <i class="fa-solid fa-file-pdf text-danger fa-lg"></i>
+                                    <div>
+                                        <div class="resume-filename">{{ r.filename }}</div>
+                                        <small class="text-muted">Uploaded {{ r.uploaded_at[:10] }}</small>
+                                    </div>
+                                </div>
+                                <div class="resume-actions">
+                                    <a href="{{ url_for('analysis.upload_page', selected_resume=r.id) }}" class="btn-icon text-primary" title="Analyze with Job">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                    </a>
+                                    <form action="{{ url_for('resume.delete_resume', resume_id=r.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Delete this resume?');">
+                                        <button type="submit" class="btn-icon text-danger" title="Delete Resume">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="empty-state compact">
+                        <i class="fa-solid fa-file-arrow-up empty-icon-sm"></i>
+                        <p>No resumes saved.</p>
+                    </div>
+                {% endif %}
+
+                <div class="mt-3">
+                    <a href="{{ url_for('analysis.upload_page') }}" class="btn btn-outline-primary btn-block">
+                        <i class="fa-solid fa-upload"></i> Upload New Resume PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

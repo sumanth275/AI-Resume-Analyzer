@@ -1,0 +1,223 @@
+/* ==========================================================================
+   RESULT DASHBOARD STYLESHEET
+   ========================================================================== */
+
+.result-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+}
+
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+}
+
+.badge-role {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background-color: var(--primary-light);
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 50px;
+    margin-bottom: 0.5rem;
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+}
+
+/* Result Hero Score Card */
+.result-hero-card {
+    padding: 2.5rem 1.5rem;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.hero-score-header h2 {
+    font-size: 1.4rem;
+    color: var(--secondary);
+    letter-spacing: 0.05em;
+    margin-bottom: 1.5rem;
+}
+
+/* Gauge Circle */
+.gauge-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+.score-circle {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #ffffff;
+    box-shadow: var(--shadow-md);
+    border: 8px solid var(--primary);
+    transition: var(--transition);
+}
+
+.score-high-border { border-color: #16a34a; color: #16a34a; }
+.score-mid-border { border-color: #d97706; color: #d97706; }
+.score-low-border { border-color: #dc2626; color: #dc2626; }
+
+.score-number {
+    font-size: 2.75rem;
+    font-weight: 800;
+}
+
+/* Progress Bar */
+.progress-bar-container {
+    max-width: 600px;
+    margin: 0 auto 2.25rem auto;
+}
+
+.progress-bar-track {
+    height: 28px;
+    background-color: #e2e8f0;
+    border-radius: 50px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+}
+
+.progress-bar-fill {
+    height: 100%;
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 12px;
+    transition: width 1.2s cubic-bezier(0.1, 0.5, 0.1, 1);
+}
+
+.fill-high { background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%); }
+.fill-mid { background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%); }
+.fill-low { background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%); }
+
+.progress-label {
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 0.88rem;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+/* Breakdown Grid */
+.score-breakdown-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+@media (max-width: 650px) {
+    .score-breakdown-grid { grid-template-columns: 1fr; }
+}
+
+.breakdown-card {
+    background: #ffffff;
+    padding: 1.25rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.breakdown-label { font-size: 0.95rem; font-weight: 700; color: var(--dark); }
+.breakdown-value { font-size: 1.85rem; font-weight: 800; margin: 0.2rem 0; }
+.breakdown-desc { color: var(--secondary); font-size: 0.8rem; }
+
+.text-indigo { color: #4f46e5; }
+.text-emerald { color: #16a34a; }
+.text-amber { color: #d97706; }
+
+/* Result Details Grid */
+.result-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+@media (max-width: 900px) {
+    .result-details-grid { grid-template-columns: 1fr; }
+}
+
+/* Skill Pills */
+.skills-pill-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+}
+
+.skill-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.85rem;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.88rem;
+}
+
+.pill-matching {
+    background-color: #dcfce7;
+    color: #15803d;
+    border: 1px solid #86efac;
+}
+
+.pill-missing {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+}
+
+.divider {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 1.25rem 0;
+}
+
+/* Recommendations List */
+.recommendation-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.recommendation-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+    color: var(--dark-muted);
+    background-color: var(--light-bg);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--warning);
+}
+
+.rec-bullet {
+    color: var(--warning);
+    font-size: 0.75rem;
+    margin-top: 0.35rem;
+}
+
+.download-banner {
+    background: var(--primary-light);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+}
