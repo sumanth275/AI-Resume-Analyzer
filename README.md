@@ -84,8 +84,7 @@ It also provides a dashboard where users can view their analysis history and dow
                   |
                   v
              PDF Report
-## 📸 Screenshots
 
 ### Dashboard
-
+PDF Report
 ![AI Resume Analyzer Dashboard](dashboard.png)
