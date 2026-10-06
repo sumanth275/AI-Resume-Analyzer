@@ -1,106 +1,150 @@
 {% extends "base.html" %}
 
-{% block title %}AI Resume Analyzer & Job Matcher | Home{% endblock %}
+{% block title %}AI Resume Analyzer & Career Intelligence | CareerAI{% endblock %}
 
 {% block content %}
-<div class="hero-section">
-    <div class="hero-container">
-        <div class="hero-badge">
-            <i class="fa-solid fa-sparkles"></i> Next-Gen AI Resume & Job Matching Engine
+<!-- HERO SECTION -->
+<section class="hero-landing-section">
+    <div class="hero-landing-container text-center">
+        <div class="hero-badge-pill">
+            <i class="fa-solid fa-sparkles text-primary"></i> Next-Generation AI Career & Resume Intelligence Platform
         </div>
-        <h1 class="hero-title">
-            Optimize Your Resume with <span class="gradient-text">AI Precision</span>
+        <h1 class="hero-landing-title">
+            AI Resume Analyzer & <span class="gradient-blue-text">Career Intelligence</span>
         </h1>
-        <p class="hero-subtitle">
-            Upload your PDF resume and paste any job description. Our advanced TF-IDF NLP engine extracts technical skills, calculates cosine match score, highlights missing keywords, and gives actionable recommendations to land more interviews.
+        <p class="hero-landing-subtitle">
+            Analyze your resume, discover the best-fit jobs across 20 tech roles, identify missing skills, and build your career roadmap with AI precision.
         </p>
-        <div class="hero-cta">
-            <a href="{{ url_for('auth.register') }}" class="btn btn-lg btn-primary">
-                <i class="fa-solid fa-rocket"></i> Get Started Free
+        <div class="hero-cta-buttons">
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <span>Upload Resume Free</span>
             </a>
-            <a href="{{ url_for('auth.login') }}" class="btn btn-lg btn-secondary">
-                <i class="fa-solid fa-right-to-bracket"></i> Log In
-            </a>
-        </div>
-    </div>
-</div>
-
-<section class="features-section">
-    <div class="section-header text-center">
-        <h2>Powered by Modern Machine Learning & NLP</h2>
-        <p>Comprehensive resume analysis designed for modern applicant tracking systems (ATS)</p>
-    </div>
-
-    <div class="features-grid">
-        <div class="feature-card">
-            <div class="feature-icon bg-indigo">
-                <i class="fa-solid fa-file-pdf"></i>
-            </div>
-            <h3>PyMuPDF Text Parsing</h3>
-            <p>Extract clean, structured text directly from multi-page PDF resumes with zero formatting distortion.</p>
-        </div>
-
-        <div class="feature-card">
-            <div class="feature-icon bg-emerald">
+            <a href="{{ url_for('auth.login') }}" class="btn btn-secondary btn-lg">
                 <i class="fa-solid fa-brain"></i>
-            </div>
-            <h3>TF-IDF & Cosine Similarity</h3>
-            <p>Scikit-learn powered TF-IDF vectorizer calculates exact semantic similarity between your experience and job postings.</p>
-        </div>
-
-        <div class="feature-card">
-            <div class="feature-icon bg-amber">
-                <i class="fa-solid fa-list-check"></i>
-            </div>
-            <h3>Skill Extraction Engine</h3>
-            <p>Detect matching skills and identify critical missing technical requirements, frameworks, and tools.</p>
-        </div>
-
-        <div class="feature-card">
-            <div class="feature-icon bg-purple">
-                <i class="fa-solid fa-file-arrow-down"></i>
-            </div>
-            <h3>PDF Analysis Reports</h3>
-            <p>Generate and download professional, comprehensive PDF analysis reports to optimize your applications offline.</p>
+                <span>Analyze Resume</span>
+            </a>
         </div>
     </div>
 </section>
 
-<section class="workflow-section">
-    <div class="workflow-container">
-        <div class="section-header text-center">
-            <h2>How It Works</h2>
-            <p>Four simple steps to double your interview callbacks</p>
+<!-- WORKFLOW PREVIEW SECTION -->
+<section class="landing-section" id="workflow-preview">
+    <div class="section-heading text-center">
+        <span class="section-tag">10-STAGE PIPELINE</span>
+        <h2>How CareerAI Analyzes Your Resume</h2>
+        <p class="text-muted">A comprehensive 10-step career matching & optimization engine</p>
+    </div>
+
+    <div class="landing-workflow-grid">
+        <div class="workflow-card-mini">
+            <span class="mini-step-num">01</span>
+            <i class="fa-solid fa-cloud-arrow-up icon-blue"></i>
+            <h4>Upload Resume</h4>
+            <p>PDF parsing & security validation</p>
         </div>
 
-        <div class="workflow-steps">
-            <div class="step-card">
-                <div class="step-number">1</div>
-                <h4>Upload PDF Resume</h4>
-                <p>Upload your latest PDF resume file securely.</p>
-            </div>
-            <div class="step-arrow"><i class="fa-solid fa-angle-right"></i></div>
-
-            <div class="step-card">
-                <div class="step-number">2</div>
-                <h4>Paste Job Description</h4>
-                <p>Copy and paste the job posting requirements.</p>
-            </div>
-            <div class="step-arrow"><i class="fa-solid fa-angle-right"></i></div>
-
-            <div class="step-card">
-                <div class="step-number">3</div>
-                <h4>AI Engine Analysis</h4>
-                <p>TF-IDF and skill extraction process both texts.</p>
-            </div>
-            <div class="step-arrow"><i class="fa-solid fa-angle-right"></i></div>
-
-            <div class="step-card">
-                <div class="step-number">4</div>
-                <h4>Get Match Score</h4>
-                <p>View matching skills, missing gaps & PDF report.</p>
-            </div>
+        <div class="workflow-card-mini">
+            <span class="mini-step-num">02</span>
+            <i class="fa-solid fa-file-code icon-blue"></i>
+            <h4>Extract Text</h4>
+            <p>PyMuPDF lossless text engine</p>
         </div>
+
+        <div class="workflow-card-mini">
+            <span class="mini-step-num">03</span>
+            <i class="fa-solid fa-list-check icon-green"></i>
+            <h4>Detect Skills</h4>
+            <p>Regex taxonomy matching</p>
+        </div>
+
+        <div class="workflow-card-mini">
+            <span class="mini-step-num">04</span>
+            <i class="fa-solid fa-graduation-cap icon-green"></i>
+            <h4>Analyze Education</h4>
+            <p>Degree & qualification check</p>
+        </div>
+
+        <div class="workflow-card-mini">
+            <span class="mini-step-num">05</span>
+            <i class="fa-solid fa-briefcase icon-purple"></i>
+            <h4>Experience & Metrics</h4>
+            <p>Impact & action verb analysis</p>
+        </div>
+
+        <div class="workflow-card-mini">
+            <span class="mini-step-num">06</span>
+            <i class="fa-solid fa-database icon-purple"></i>
+            <h4>Job Database Scan</h4>
+            <p>20 Tech role comparison</p>
+        </div>
+
+        <div class="workflow-card-mini">
+            <span class="mini-step-num">07</span>
+            <i class="fa-solid fa-calculator icon-orange"></i>
+            <h4>Calculate Match %</h4>
+            <p>TF-IDF cosine similarity</p>
+        </div>
+
+        <div class="workflow-card-mini">
+            <span class="mini-step-num">08</span>
+            <i class="fa-solid fa-ranking-star icon-orange"></i>
+            <h4>Recommend Best Jobs</h4>
+            <p>Role fit ranking matrix</p>
+        </div>
+
+        <div class="workflow-card-mini">
+            <span class="mini-step-num">09</span>
+            <i class="fa-solid fa-circle-xmark icon-red"></i>
+            <h4>Find Missing Skills</h4>
+            <p>ATS keyword gap detection</p>
+        </div>
+
+        <div class="workflow-card-mini">
+            <span class="mini-step-num">10</span>
+            <i class="fa-solid fa-lightbulb icon-green"></i>
+            <h4>Skill Roadmap</h4>
+            <p>Actionable improvement steps</p>
+        </div>
+    </div>
+</section>
+
+<!-- FEATURES PREVIEW SECTION -->
+<section class="landing-section" id="features-preview">
+    <div class="section-heading text-center">
+        <span class="section-tag">KEY PLATFORM FEATURES</span>
+        <h2>Everything You Need to Double Interview Callbacks</h2>
+    </div>
+
+    <div class="features-trio-grid">
+        <div class="feature-box">
+            <div class="box-icon-head icon-bg-blue"><i class="fa-solid fa-bullseye"></i></div>
+            <h3>20 Job Role Matcher</h3>
+            <p>Scan your resume against 20 predefined tech job roles (Python Developer, Data Scientist, Web Developer, MLOps, etc.) to discover your strongest career fit.</p>
+        </div>
+
+        <div class="feature-box">
+            <div class="box-icon-head icon-bg-green"><i class="fa-solid fa-route"></i></div>
+            <h3>Skill Improvement Roadmap</h3>
+            <p>Get a step-by-step roadmap showing your current strong skills, skills to improve, and targeted learning resources to bridge ATS qualification gaps.</p>
+        </div>
+
+        <div class="feature-box">
+            <div class="box-icon-head icon-bg-purple"><i class="fa-solid fa-file-arrow-down"></i></div>
+            <h3>PDF Analysis Reports</h3>
+            <p>Download comprehensive PDF reports generated using ReportLab, complete with score breakdowns, matching keywords, missing skills, and recommendations.</p>
+        </div>
+    </div>
+</section>
+
+<!-- CTA BANNER SECTION -->
+<section class="landing-cta-banner text-center">
+    <h2>Ready to Unlock Your Career Roadmap?</h2>
+    <p>Upload your PDF resume now to analyze match scores and discover your best-fit job roles.</p>
+    <div class="mt-4">
+        <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">
+            <i class="fa-solid fa-rocket"></i> Get Started Free
+        </a>
     </div>
 </section>
 {% endblock %}

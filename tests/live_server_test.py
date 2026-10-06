@@ -106,8 +106,10 @@ def test_live_app():
     assert "Match Analysis Results" in result_html or "JOB MATCH SCORE" in result_html
     print("[SUCCESS] 4. Resume Upload & Job Match Analysis HTTP 200 OK")
 
-    # 6. Test PDF Report Download HTTP Endpoint
-    download_url = f"{BASE_URL}/download-report/2"
+    # Extract actual analysis_id from redirect URL
+    final_url = resp.geturl()
+    analysis_id = final_url.rsplit('/', 1)[1] if '/result/' in final_url else '1'
+    download_url = f"{BASE_URL}/download-report/{analysis_id}"
     resp = opener.open(download_url)
     assert resp.status == 200
     assert resp.headers.get('Content-Type') == 'application/pdf'

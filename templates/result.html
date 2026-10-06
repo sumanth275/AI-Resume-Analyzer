@@ -1,698 +1,285 @@
 {% extends "base.html" %}
 
-{% block title %}Match Analysis Result | AI Resume Analyzer{% endblock %}
+{% block title %}Analysis Result — {{ analysis.job_title }} | AI Resume Analyzer{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/result.css') }}">
+{% endblock %}
 
 {% block content %}
-
 <div class="result-wrapper">
 
     <!-- ===================================================== -->
-    <!-- HEADER -->
+    <!-- 1. JOB DESCRIPTION MATCH HEADER -->
     <!-- ===================================================== -->
-
-    <div class="result-header">
-
-        <div>
-
-            <span class="badge-role">
-                <i class="fa-solid fa-briefcase"></i>
-                {{ analysis.job_title }}
-            </span>
-
-            <h1>Match Analysis Results</h1>
-
-            <p class="text-muted">
-                <i class="fa-regular fa-file-pdf"></i>
-                Analyzed against:
-                <strong>{{ analysis.filename }}</strong>
-                on {{ analysis.created_at[:10] }}
+    <div class="result-header-card">
+        <div class="header-left">
+            <span class="role-badge-tag"><i class="fa-solid fa-briefcase"></i> {{ analysis.job_title }}</span>
+            <h1 class="result-page-title">Match Analysis & Role Fit Report</h1>
+            <p class="result-meta-text">
+                <i class="fa-regular fa-file-pdf text-danger"></i> Analyzed against <strong>{{ analysis.filename }}</strong> on {{ analysis.created_at[:10] }}
             </p>
-
         </div>
-
-
         <div class="header-actions">
-
-            <a href="{{ url_for('analysis.download_report', analysis_id=analysis.id) }}"
-               class="btn btn-primary btn-lg">
-
+            <!-- 11. PDF REPORT DOWNLOAD BUTTON -->
+            <a href="{{ url_for('analysis.download_report', analysis_id=analysis.id) }}" class="btn btn-primary btn-lg">
                 <i class="fa-solid fa-file-arrow-down"></i>
-                DOWNLOAD REPORT
-
+                <span>Download PDF Report</span>
             </a>
-
-
-            <a href="{{ url_for('analysis.upload_page') }}"
-               class="btn btn-outline-secondary btn-lg">
-
+            <a href="{{ url_for('analysis.upload_page') }}" class="btn btn-outline-secondary btn-lg">
                 <i class="fa-solid fa-rotate-right"></i>
-                Analyze Another Job
-
+                <span>Analyze Another Job</span>
             </a>
-
         </div>
-
     </div>
 
-
     <!-- ===================================================== -->
-    <!-- OVERALL JOB MATCH SCORE -->
+    <!-- 2. OVERALL RESUME SCORE & MATCH GAUGE -->
     <!-- ===================================================== -->
-
-    <div class="card result-hero-card text-center">
-
-        <div class="hero-score-header">
-
+    <div class="card hero-score-card text-center">
+        <div class="hero-card-header">
             <h2>🎯 OVERALL JOB MATCH SCORE</h2>
-
+            <p class="text-muted">Combined score based on technical skills (50%), TF-IDF keyword density (35%), and structure quality (15%)</p>
         </div>
 
-
-        <div class="gauge-container">
-
-            <div class="score-circle
-
-                {% if analysis.match_score >= 75 %}
-                    score-high-border
-                {% elif analysis.match_score >= 50 %}
-                    score-mid-border
-                {% else %}
-                    score-low-border
-                {% endif %}">
-
-                <span class="score-number"
-                      id="animated-score"
-                      data-target="{{ analysis.match_score }}">
-
-                    0%
-
-                </span>
-
-            </div>
-
-        </div>
-
-
-        <!-- Progress Bar -->
-
-        <div class="progress-bar-container">
-
-            <div class="progress-bar-track">
-
-                <div class="progress-bar-fill
-
+        <div class="gauge-display-container">
+            <div class="score-circle-hero {% if analysis.match_score >= 75 %}border-high{% elif analysis.match_score >= 50 %}border-mid{% else %}border-low{% endif %}">
+                <span class="score-number-hero" id="animated-score" data-target="{{ analysis.match_score }}">0%</span>
+                <span class="score-fit-label">
                     {% if analysis.match_score >= 75 %}
-                        fill-high
+                        Strong Fit
                     {% elif analysis.match_score >= 50 %}
-                        fill-mid
+                        Moderate Fit
                     {% else %}
-                        fill-low
-                    {% endif %}"
-
-                    style="width: {{ analysis.match_score }}%;">
-
-                    <span class="progress-label">
-
-                        {{ analysis.match_score }}%
-
-                    </span>
-
-                </div>
-
+                        Needs Tailoring
+                    {% endif %}
+                </span>
             </div>
-
         </div>
 
-
-        <!-- Score Breakdown -->
-
-        <div class="score-breakdown-grid">
-
-
+        <!-- 3. & 4. SKILLS MATCH & KEYWORD MATCH BREAKDOWN -->
+        <div class="score-breakdown-cards">
             <div class="breakdown-card">
-
-                <div class="breakdown-label">
-                    Resume Score
+                <div class="breakdown-icon bg-blue"><i class="fa-solid fa-file-lines"></i></div>
+                <div class="breakdown-info">
+                    <span class="breakdown-label">Resume Quality Score</span>
+                    <span class="breakdown-val text-primary">{{ analysis.resume_score }}%</span>
+                    <small class="text-muted">Structure & Section Quality</small>
                 </div>
-
-                <div class="breakdown-value text-indigo">
-
-                    {{ analysis.resume_score }}%
-
-                </div>
-
-                <small class="breakdown-desc">
-
-                    Structure & Content Quality
-
-                </small>
-
             </div>
 
-
             <div class="breakdown-card">
-
-                <div class="breakdown-label">
-                    Skills Match
+                <div class="breakdown-icon bg-green"><i class="fa-solid fa-layer-group"></i></div>
+                <div class="breakdown-info">
+                    <span class="breakdown-label">Skills Match Score</span>
+                    <span class="breakdown-val text-success">{{ analysis.skills_match_score }}%</span>
+                    <small class="text-muted">Technical Overlap</small>
                 </div>
-
-                <div class="breakdown-value text-emerald">
-
-                    {{ analysis.skills_match_score }}%
-
-                </div>
-
-                <small class="breakdown-desc">
-
-                    Technical Skills Overlap
-
-                </small>
-
             </div>
 
-
             <div class="breakdown-card">
-
-                <div class="breakdown-label">
-                    Keyword Match
+                <div class="breakdown-icon bg-orange"><i class="fa-solid fa-brain"></i></div>
+                <div class="breakdown-info">
+                    <span class="breakdown-label">Keyword Similarity</span>
+                    <span class="breakdown-val text-warning">{{ analysis.keyword_match_score }}%</span>
+                    <small class="text-muted">TF-IDF Vector Density</small>
                 </div>
-
-                <div class="breakdown-value text-amber">
-
-                    {{ analysis.keyword_match_score }}%
-
-                </div>
-
-                <small class="breakdown-desc">
-
-                    TF-IDF Vector Similarity
-
-                </small>
-
             </div>
-
-
         </div>
-
     </div>
 
-
     <!-- ===================================================== -->
-    <!-- SKILLS + RECOMMENDATIONS -->
+    <!-- 10. NEXT BEST ACTION -->
     <!-- ===================================================== -->
-
-    <div class="result-details-grid">
-
-
-        <!-- SKILLS ANALYSIS -->
-
-        <div class="card">
-
-            <div class="card-header">
-
-                <h3>
-
-                    <i class="fa-solid fa-layer-group"></i>
-
-                    Skills Analysis Breakdown
-
-                </h3>
-
+    <div class="card next-best-action-card">
+        <div class="action-card-body">
+            <div class="action-icon">
+                <i class="fa-solid fa-bolt text-primary"></i>
             </div>
-
-
-            <div class="card-body">
-
-
-                <!-- Matching Skills -->
-
-                <div class="skills-block mb-4">
-
-                    <h4 class="text-success mb-2">
-
-                        <i class="fa-solid fa-circle-check"></i>
-
-                        ✅ MATCHING SKILLS
-
-                    </h4>
-
-
-                    {% if analysis.matching_skills %}
-
-                    <div class="skills-pill-container">
-
-                        {% for skill in analysis.matching_skills %}
-
-                        <span class="skill-pill pill-matching">
-
-                            <i class="fa-solid fa-check"></i>
-
-                            {{ skill }}
-
-                        </span>
-
-                        {% endfor %}
-
-                    </div>
-
-
+            <div class="action-content">
+                <span class="action-tag"><i class="fa-solid fa-sparkles"></i> NEXT BEST ACTION</span>
+                <h3 class="action-heading">
+                    {% if analysis.missing_skills %}
+                        Add <span class="highlight-text">{{ analysis.missing_skills[:3]|join(', ') }}</span> to your resume experience section to increase your match score!
                     {% else %}
-
-                    <p class="text-muted italic">
-
-                        No direct matching technical skills detected
-                        in the resume text.
-
-                    </p>
-
+                        Your resume matches the target job description cleanly. Proceed to submit your application!
                     {% endif %}
+                </h3>
+                <p class="action-subtext">
+                    {% if analysis.recommendations %}
+                        {{ analysis.recommendations[0] }}
+                    {% endif %}
+                </p>
+            </div>
+            <div class="action-button-wrapper">
+                <a href="{{ url_for('analysis.download_report', analysis_id=analysis.id) }}" class="btn btn-primary">
+                    <i class="fa-solid fa-download"></i> Get Report PDF
+                </a>
+            </div>
+        </div>
+    </div>
 
+    <!-- ===================================================== -->
+    <!-- 5. MATCHING SKILLS, 6. MISSING SKILLS, 7. RECOMMENDATIONS -->
+    <!-- ===================================================== -->
+    <div class="result-details-grid">
+        <!-- Skills Analysis -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-layer-group text-primary"></i> Technical Skills Analysis</h3>
+            </div>
+            <div class="card-body">
+                <!-- Matching Skills -->
+                <div class="skills-block mb-4">
+                    <h4 class="text-success mb-2"><i class="fa-solid fa-circle-check"></i> ✅ MATCHING SKILLS FOUND ({{ analysis.matching_skills|length }})</h4>
+                    {% if analysis.matching_skills %}
+                    <div class="skills-pill-group">
+                        {% for skill in analysis.matching_skills %}
+                        <span class="pill-skill pill-strong"><i class="fa-solid fa-check"></i> {{ skill }}</span>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted italic">No direct technical skill matches found in resume text.</p>
+                    {% endif %}
                 </div>
 
-
-                <hr class="divider">
-
+                <hr class="divider" />
 
                 <!-- Missing Skills -->
-
-                <div class="skills-block mt-4">
-
-                    <h4 class="text-danger mb-2">
-
-                        <i class="fa-solid fa-circle-xmark"></i>
-
-                        ❌ MISSING SKILLS
-
-                    </h4>
-
-
+                <div class="skills-block">
+                    <h4 class="text-danger mb-2"><i class="fa-solid fa-circle-xmark"></i> ❌ MISSING SKILLS REQUIRED ({{ analysis.missing_skills|length }})</h4>
                     {% if analysis.missing_skills %}
-
-                    <div class="skills-pill-container">
-
+                    <div class="skills-pill-group">
                         {% for skill in analysis.missing_skills %}
-
-                        <span class="skill-pill pill-missing">
-
-                            <i class="fa-solid fa-plus"></i>
-
-                            {{ skill }}
-
-                        </span>
-
+                        <span class="pill-skill pill-missing"><i class="fa-solid fa-plus"></i> {{ skill }}</span>
                         {% endfor %}
-
                     </div>
-
-
                     {% else %}
-
-                    <p class="text-success font-weight-bold">
-
-                        <i class="fa-solid fa-star"></i>
-
-                        Excellent! No key required skills are missing.
-
-                    </p>
-
+                    <p class="text-success fw-bold"><i class="fa-solid fa-star"></i> Excellent! No major required skills are missing.</p>
                     {% endif %}
-
                 </div>
-
             </div>
-
         </div>
 
-
-        <!-- RECOMMENDATIONS -->
-
+        <!-- 7. RECOMMENDATIONS -->
         <div class="card">
-
             <div class="card-header">
-
-                <h3>
-
-                    <i class="fa-solid fa-lightbulb text-warning"></i>
-
-                    💡 RECOMMENDATIONS
-
-                </h3>
-
+                <h3><i class="fa-solid fa-lightbulb text-warning"></i> 💡 AI RECOMMENDATIONS</h3>
             </div>
-
-
             <div class="card-body">
-
                 {% if analysis.recommendations %}
-
                 <ul class="recommendation-list">
-
                     {% for rec in analysis.recommendations %}
-
                     <li class="recommendation-item">
-
                         <i class="fa-solid fa-circle-dot rec-bullet"></i>
-
-                        <span>
-
-                            {{ rec }}
-
-                        </span>
-
+                        <span>{{ rec }}</span>
                     </li>
-
                     {% endfor %}
-
                 </ul>
-
-
                 {% else %}
-
-                <p class="text-muted">
-
-                    Your resume appears well matched to the target
-                    job description.
-
-                </p>
-
+                <p class="text-muted">Your resume appears well matched to the target job description.</p>
                 {% endif %}
 
-
                 <div class="download-banner mt-4 text-center">
-
-                    <p class="mb-2">
-
-                        Need a portable copy of this analysis?
-
-                    </p>
-
-
-                    <a href="{{ url_for('analysis.download_report',
-                                        analysis_id=analysis.id) }}"
-
-                       class="btn btn-outline-primary btn-block">
-
-                        <i class="fa-solid fa-download"></i>
-
-                        DOWNLOAD FULL PDF REPORT
-
+                    <p class="mb-2 text-muted">Need an offline copy of this breakdown?</p>
+                    <a href="{{ url_for('analysis.download_report', analysis_id=analysis.id) }}" class="btn btn-outline-primary btn-block">
+                        <i class="fa-solid fa-download"></i> DOWNLOAD FULL PDF REPORT
                     </a>
-
                 </div>
-
             </div>
-
         </div>
-
     </div>
 
-
     <!-- ===================================================== -->
-    <!-- 20 JOB ROLE MATCHING -->
+    <!-- 9. SKILL IMPROVEMENT ROADMAP -->
     <!-- ===================================================== -->
-
-    {% if multiple_role_results %}
-
     <div class="card mt-4">
-
-
-        <!-- SECTION HEADER -->
-
         <div class="card-header">
-
-            <h3>
-
-                <i class="fa-solid fa-ranking-star"></i>
-
-                MULTIPLE JOB ROLE MATCHING
-
-            </h3>
-
-
-            <p class="text-muted mb-0">
-
-                Compare your resume with 20 different job roles
-
-            </p>
-
+            <h3><i class="fa-solid fa-route text-primary"></i> Skill Improvement Roadmap</h3>
         </div>
+        <div class="card-body">
+            <div class="roadmap-horizontal-grid">
+                <div class="roadmap-box box-green">
+                    <span class="roadmap-step-tag">STAGE 1</span>
+                    <h5 class="roadmap-box-title"><i class="fa-solid fa-check-double"></i> Current Skills</h5>
+                    <p class="roadmap-box-desc">{{ analysis.matching_skills[:5]|join(', ') if analysis.matching_skills else 'Formatting & Section Setup' }}</p>
+                </div>
 
+                <div class="roadmap-arrow-icon"><i class="fa-solid fa-arrow-right"></i></div>
+
+                <div class="roadmap-box box-orange">
+                    <span class="roadmap-step-tag">STAGE 2</span>
+                    <h5 class="roadmap-box-title"><i class="fa-solid fa-arrow-up"></i> Skills to Improve</h5>
+                    <p class="roadmap-box-desc">{{ analysis.missing_skills[:4]|join(', ') if analysis.missing_skills else 'Quantify Key Metrics' }}</p>
+                </div>
+
+                <div class="roadmap-arrow-icon"><i class="fa-solid fa-arrow-right"></i></div>
+
+                <div class="roadmap-box box-blue">
+                    <span class="roadmap-step-tag">STAGE 3</span>
+                    <h5 class="roadmap-box-title"><i class="fa-solid fa-graduation-cap"></i> Recommended Learning</h5>
+                    <p class="roadmap-box-desc">Build 1 hands-on project incorporating missing tech tools and add metric bullet points.</p>
+                </div>
+
+                <div class="roadmap-arrow-icon"><i class="fa-solid fa-arrow-right"></i></div>
+
+                <div class="roadmap-box box-purple">
+                    <span class="roadmap-step-tag">STAGE 4</span>
+                    <h5 class="roadmap-box-title"><i class="fa-solid fa-trophy"></i> Target Job Role</h5>
+                    <p class="roadmap-box-desc"><strong>{{ analysis.job_title }}</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- 8. TOP 20 SUITABLE ROLES -->
+    <!-- ===================================================== -->
+    {% if multiple_role_results %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <div>
+                <h3><i class="fa-solid fa-ranking-star text-primary"></i> 20 Suitable Tech Job Roles</h3>
+                <p class="text-muted mb-0">Compared across 20 predefined job descriptions</p>
+            </div>
+            <span class="top-rank-badge">
+                🏆 #1 Match: <strong>{{ multiple_role_results[0].job_role }}</strong> ({{ multiple_role_results[0].match_score }}%)
+            </span>
+        </div>
 
         <div class="card-body">
-
-
-            <!-- ================================================= -->
-            <!-- TOP SUMMARY -->
-            <!-- ================================================= -->
-
-            <div class="score-breakdown-grid">
-
-
-                <!-- HIGHEST MATCH -->
-
-                <div class="breakdown-card">
-
-                    <div class="breakdown-label">
-
-                        🏆 HIGHEST MATCH
-
-                    </div>
-
-
-                    <div class="breakdown-value text-success">
-
-                        {{ multiple_role_results[0].job_role }}
-
-                    </div>
-
-
-                    <small class="breakdown-desc">
-
-                        {{ multiple_role_results[0].match_score }}% Match
-
-                    </small>
-
-                </div>
-
-
-                <!-- AVERAGE MATCH -->
-
-                <div class="breakdown-card">
-
-                    <div class="breakdown-label">
-
-                        📊 AVERAGE MATCH
-
-                    </div>
-
-
-                    <div class="breakdown-value text-indigo">
-
-                        {{ (
-
-                            multiple_role_results
-                            | map(attribute='match_score')
-                            | sum
-
-                            / multiple_role_results|length
-
-                        ) | round(1) }}%
-
-                    </div>
-
-
-                    <small class="breakdown-desc">
-
-                        Across 20 job roles
-
-                    </small>
-
-                </div>
-
-
-                <!-- LOWEST MATCH -->
-
-                <div class="breakdown-card">
-
-                    <div class="breakdown-label">
-
-                        📉 LOWEST MATCH
-
-                    </div>
-
-
-                    <div class="breakdown-value text-danger">
-
-                        {{ multiple_role_results[-1].job_role }}
-
-                    </div>
-
-
-                    <small class="breakdown-desc">
-
-                        {{ multiple_role_results[-1].match_score }}% Match
-
-                    </small>
-
-                </div>
-
-
-            </div>
-
-
-            <!-- ================================================= -->
-            <!-- JOB ROLE RANKING -->
-            <!-- ================================================= -->
-
-            <div class="mt-4">
-
-
-                <h4 class="mb-3">
-
-                    <i class="fa-solid fa-chart-column"></i>
-
-                    JOB ROLE MATCH RANKING
-
-                </h4>
-
-
+            <div class="roles-ranking-list">
                 {% for role in multiple_role_results %}
-
-
-                <div class="breakdown-card mb-3">
-
-
-                    <!-- Role Header -->
-
-                    <div class="d-flex justify-content-between align-items-center">
-
-
-                        <div>
-
-
-                            <span class="badge bg-secondary">
-
-                                #{{ loop.index }}
-
-                            </span>
-
-
-                            <strong class="ms-2">
-
-                                {{ role.job_role }}
-
-                            </strong>
-
-
+                <div class="role-ranking-item {% if loop.first %}item-top-rank{% endif %}">
+                    <div class="ranking-left">
+                        <span class="rank-number-badge">#{{ loop.index }}</span>
+                        <div class="ranking-title-group">
+                            <strong class="role-name-text">{{ role.job_role }}</strong>
+                            {% if loop.first %}
+                                <span class="badge-best-fit"><i class="fa-solid fa-star"></i> Best Matching Role</span>
+                            {% endif %}
                         </div>
-
-
-                        <div class="breakdown-value text-indigo">
-
-                            {{ role.match_score }}%
-
-                        </div>
-
-
                     </div>
 
-
-                    <!-- Progress Bar -->
-
-                    <div class="progress-bar-container mt-2">
-
+                    <div class="ranking-middle flex-1 mx-4">
                         <div class="progress-bar-track">
-
-
-                            <div class="progress-bar-fill
-
-                                {% if role.match_score >= 75 %}
-
-                                    fill-high
-
-                                {% elif role.match_score >= 50 %}
-
-                                    fill-mid
-
-                                {% else %}
-
-                                    fill-low
-
-                                {% endif %}"
-
-                                style="width: {{ role.match_score }}%;">
-
-                                <span class="progress-label">
-
-                                    {{ role.match_score }}%
-
-                                </span>
-
-                            </div>
-
-
+                            <div class="progress-bar-fill {% if role.match_score >= 75 %}fill-green{% elif role.match_score >= 50 %}fill-orange{% else %}fill-red{% endif %}" style="width: {{ role.match_score }}%;"></div>
                         </div>
-
                     </div>
 
-
-                    <!-- Best Role -->
-
-                    {% if loop.first %}
-
-                    <small class="text-success">
-
-                        <i class="fa-solid fa-star"></i>
-
-                        Best matching job role
-
-                    </small>
-
-                    {% endif %}
-
-
-                    <!-- Lowest Role -->
-
-                    {% if loop.last %}
-
-                    <small class="text-danger">
-
-                        <i class="fa-solid fa-arrow-down"></i>
-
-                        Lowest matching job role
-
-                    </small>
-
-                    {% endif %}
-
-
+                    <div class="ranking-right">
+                        <span class="score-percent-badge">{{ role.match_score }}% Match</span>
+                    </div>
                 </div>
-
-
                 {% endfor %}
-
-
             </div>
-
-
         </div>
-
     </div>
-
     {% endif %}
 
-
 </div>
-
 {% endblock %}
 
-
-<!-- ===================================================== -->
-<!-- JAVASCRIPT -->
-<!-- ===================================================== -->
-
 {% block extra_js %}
-
 <script src="{{ url_for('static', filename='js/result.js') }}"></script>
-
 {% endblock %}

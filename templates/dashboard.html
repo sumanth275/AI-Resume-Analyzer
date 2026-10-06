@@ -1,155 +1,682 @@
 {% extends "base.html" %}
 
-{% block title %}User Dashboard | AI Resume Analyzer{% endblock %}
+{% block title %}Career Dashboard | AI Resume Analyzer{% endblock %}
 
 {% block content %}
-<div class="dashboard-wrapper">
-    <div class="dashboard-header">
-        <div>
-            <h1><i class="fa-solid fa-gauge-high text-primary"></i> Dashboard</h1>
-            <p>Overview of your uploaded resumes and job match analyses</p>
+<div class="dashboard-container">
+
+    <!-- ===================================================== -->
+    <!-- DASHBOARD HEADER -->
+    <!-- ===================================================== -->
+    <div class="dashboard-header-banner">
+        <div class="header-text-group">
+            <h1 class="dashboard-greeting">Hello, {{ session.get('user_name', 'Candidate') }}! 👋</h1>
+            <p class="dashboard-subtitle">Here is your resume analysis, top job matches, and career improvement roadmap.</p>
         </div>
-        <a href="{{ url_for('analysis.upload_page') }}" class="btn btn-primary btn-lg">
-            <i class="fa-solid fa-plus-circle"></i> New Job Match Analysis
-        </a>
+        <div class="header-action-group">
+            <a href="{{ url_for('analysis.upload_page') }}" class="btn btn-primary btn-lg">
+                <i class="fa-solid fa-plus-circle"></i>
+                <span>Analyze New Job Match</span>
+            </a>
+        </div>
     </div>
 
-    <!-- Stats Summary Row -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-icon bg-indigo-light">
-                <i class="fa-solid fa-file-pdf"></i>
+    <!-- ===================================================== -->
+    <!-- SUMMARY STATS CARDS -->
+    <!-- ===================================================== -->
+    <div class="stats-cards-grid">
+        <div class="stat-summary-card">
+            <div class="stat-icon-wrapper icon-bg-blue">
+                <i class="fa-solid fa-file-contract"></i>
             </div>
-            <div class="stat-info">
-                <span class="stat-value">{{ total_resumes }}</span>
-                <span class="stat-label">Uploaded Resumes</span>
+            <div class="stat-details">
+                <span class="stat-value-text">
+                    {% if latest_analysis %}
+                        {{ latest_analysis.resume_score }}%
+                    {% else %}
+                        {{ avg_match_score }}%
+                    {% endif %}
+                </span>
+                <span class="stat-label-text">Resume Quality Score</span>
+                <span class="stat-sub-text"><i class="fa-solid fa-circle-check text-success"></i> Structure & Formatting</span>
             </div>
         </div>
 
-        <div class="stat-card">
-            <div class="stat-icon bg-emerald-light">
-                <i class="fa-solid fa-chart-pie"></i>
+        <div class="stat-summary-card">
+            <div class="stat-icon-wrapper icon-bg-green">
+                <i class="fa-solid fa-bolt"></i>
             </div>
-            <div class="stat-info">
-                <span class="stat-value">{{ total_analyses }}</span>
-                <span class="stat-label">Analyses Completed</span>
+            <div class="stat-details">
+                <span class="stat-value-text">
+                    {% if latest_analysis %}
+                        {{ latest_analysis.matching_skills|length }}
+                    {% else %}
+                        0
+                    {% endif %}
+                </span>
+                <span class="stat-label-text">Skills Found</span>
+                <span class="stat-sub-text"><i class="fa-solid fa-check-double text-success"></i> Strong Match</span>
             </div>
         </div>
 
-        <div class="stat-card">
-            <div class="stat-icon bg-purple-light">
+        <div class="stat-summary-card">
+            <div class="stat-icon-wrapper icon-bg-purple">
                 <i class="fa-solid fa-bullseye"></i>
             </div>
-            <div class="stat-info">
-                <span class="stat-value">{{ avg_match_score }}%</span>
-                <span class="stat-label">Avg Job Match Score</span>
+            <div class="stat-details">
+                <span class="stat-value-text">{{ total_analyses }}</span>
+                <span class="stat-label-text">Jobs Matched</span>
+                <span class="stat-sub-text"><i class="fa-solid fa-chart-line text-primary"></i> Target Role Scans</span>
+            </div>
+        </div>
+
+        <div class="stat-summary-card">
+            <div class="stat-icon-wrapper icon-bg-orange">
+                <i class="fa-solid fa-arrow-trend-up"></i>
+            </div>
+            <div class="stat-details">
+                <span class="stat-value-text">
+                    {% if latest_analysis %}
+                        {{ latest_analysis.missing_skills|length }}
+                    {% else %}
+                        0
+                    {% endif %}
+                </span>
+                <span class="stat-label-text">Skills to Improve</span>
+                <span class="stat-sub-text"><i class="fa-solid fa-triangle-exclamation text-warning"></i> Growth Opportunities</span>
             </div>
         </div>
     </div>
 
-    <!-- Main Content Columns -->
-    <div class="dashboard-grid">
-        <!-- Analyses History Table -->
-        <div class="card grid-span-2">
-            <div class="card-header">
-                <h3><i class="fa-solid fa-history"></i> Recent Match Analyses</h3>
-            </div>
-            <div class="card-body p-0">
-                {% if analyses %}
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Job Role</th>
-                                    <th>Resume File</th>
-                                    <th>Match Score</th>
-                                    <th>Date</th>
-                                    <th class="text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for item in analyses %}
-                                <tr>
-                                    <td><strong>{{ item.job_title }}</strong></td>
-                                    <td><i class="fa-regular fa-file-pdf text-danger"></i> {{ item.filename }}</td>
-                                    <td>
-                                        <span class="score-badge {% if item.match_score >= 75 %}score-high{% elif item.match_score >= 50 %}score-mid{% else %}score-low{% endif %}">
-                                            {{ item.match_score }}%
-                                        </span>
-                                    </td>
-                                    <td><small class="text-muted">{{ item.created_at[:10] }}</small></td>
-                                    <td class="text-right action-cells">
-                                        <a href="{{ url_for('analysis.result', analysis_id=item.id) }}" class="btn btn-sm btn-outline-primary" title="View Results">
-                                            <i class="fa-solid fa-eye"></i> View
-                                        </a>
-                                        <a href="{{ url_for('analysis.download_report', analysis_id=item.id) }}" class="btn btn-sm btn-outline-secondary" title="Download Report">
-                                            <i class="fa-solid fa-download"></i> PDF
-                                        </a>
-                                        <form action="{{ url_for('analysis.delete_analysis', analysis_id=item.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this analysis report?');">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
-                                                <i class="fa-solid fa-trash"></i>
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <div class="empty-state">
-                        <i class="fa-solid fa-magnifying-glass-chart empty-icon"></i>
-                        <p>No analyses performed yet.</p>
-                        <a href="{{ url_for('analysis.upload_page') }}" class="btn btn-primary">Start Your First Match Analysis</a>
-                    </div>
-                {% endif %}
+    <!-- ===================================================== -->
+    <!-- 10-STEP CONNECTED WORKFLOW PIPELINE SECTION -->
+    <!-- ===================================================== -->
+    <section class="card workflow-card-section" id="workflow-section">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-diagram-project text-primary"></i> AI Resume Analysis & Career Roadmap Workflow</h3>
+            <span class="badge-status-pill"><i class="fa-solid fa-circle-play text-success"></i> 10-Stage Pipeline</span>
+        </div>
+        <div class="card-body">
+            <div class="workflow-grid-container">
+                <div class="workflow-step-box step-completed">
+                    <div class="step-badge-num">01</div>
+                    <div class="step-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                    <div class="step-title">Upload Resume</div>
+                    <div class="step-desc">Secure PDF ingest & storage</div>
+                </div>
+
+                <div class="workflow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+
+                <div class="workflow-step-box step-completed">
+                    <div class="step-badge-num">02</div>
+                    <div class="step-icon"><i class="fa-solid fa-file-code"></i></div>
+                    <div class="step-title">Extract Text</div>
+                    <div class="step-desc">PyMuPDF raw text parser</div>
+                </div>
+
+                <div class="workflow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+
+                <div class="workflow-step-box step-completed">
+                    <div class="step-badge-num">03</div>
+                    <div class="step-icon"><i class="fa-solid fa-list-check"></i></div>
+                    <div class="step-title">Detect Skills</div>
+                    <div class="step-desc">Regex skill taxonomy engine</div>
+                </div>
+
+                <div class="workflow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+
+                <div class="workflow-step-box step-completed">
+                    <div class="step-badge-num">04</div>
+                    <div class="step-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+                    <div class="step-title">Analyze Education</div>
+                    <div class="step-desc">Degree & institution detection</div>
+                </div>
+
+                <div class="workflow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+
+                <div class="workflow-step-box step-completed">
+                    <div class="step-badge-num">05</div>
+                    <div class="step-icon"><i class="fa-solid fa-briefcase"></i></div>
+                    <div class="step-title">Analyze Experience</div>
+                    <div class="step-desc">Impact & metric validation</div>
+                </div>
+
+                <div class="workflow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+
+                <div class="workflow-step-box step-active">
+                    <div class="step-badge-num">06</div>
+                    <div class="step-icon"><i class="fa-solid fa-database"></i></div>
+                    <div class="step-title">Job Matching</div>
+                    <div class="step-desc">20-role matrix scan</div>
+                </div>
+
+                <div class="workflow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+
+                <div class="workflow-step-box step-active">
+                    <div class="step-badge-num">07</div>
+                    <div class="step-icon"><i class="fa-solid fa-calculator"></i></div>
+                    <div class="step-title">Calculate Match %</div>
+                    <div class="step-desc">TF-IDF cosine similarity</div>
+                </div>
+
+                <div class="workflow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+
+                <div class="workflow-step-box step-active">
+                    <div class="step-badge-num">08</div>
+                    <div class="step-icon"><i class="fa-solid fa-ranking-star"></i></div>
+                    <div class="step-title">Recommend Jobs</div>
+                    <div class="step-desc">Best-fit role ranking</div>
+                </div>
+
+                <div class="workflow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+
+                <div class="workflow-step-box step-active">
+                    <div class="step-badge-num">09</div>
+                    <div class="step-icon"><i class="fa-solid fa-circle-xmark"></i></div>
+                    <div class="step-title">Missing Skills</div>
+                    <div class="step-desc">ATS keyword gap analysis</div>
+                </div>
+
+                <div class="workflow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+
+                <div class="workflow-step-box step-active">
+                    <div class="step-badge-num">10</div>
+                    <div class="step-icon"><i class="fa-solid fa-lightbulb"></i></div>
+                    <div class="step-title">Improvement Plan</div>
+                    <div class="step-desc">Personalized action roadmap</div>
+                </div>
             </div>
         </div>
+    </section>
 
-        <!-- Uploaded Resumes Sidebar -->
+    <!-- ===================================================== -->
+    <!-- NEXT BEST ACTION CARD -->
+    <!-- ===================================================== -->
+    {% if latest_analysis %}
+    <div class="card next-best-action-card" id="next-action-card">
+        <div class="action-card-body">
+            <div class="action-icon">
+                <i class="fa-solid fa-rocket text-primary"></i>
+            </div>
+            <div class="action-content">
+                <span class="action-tag"><i class="fa-solid fa-bolt"></i> YOUR NEXT BEST ACTION</span>
+                <h3 class="action-heading">
+                    {% if latest_analysis.missing_skills %}
+                        Master <span class="highlight-text">{{ latest_analysis.missing_skills[0] }}</span> to increase your match score for <span class="highlight-text">{{ latest_analysis.job_title }}</span>!
+                    {% else %}
+                        Your resume strongly aligns with {{ latest_analysis.job_title }}. Download your PDF report to prepare for interviews!
+                    {% endif %}
+                </h3>
+                <p class="action-subtext">
+                    {% if latest_analysis.recommendations %}
+                        {{ latest_analysis.recommendations[0] }}
+                    {% else %}
+                        Keep your experience points metric-driven to boost recruiter callbacks.
+                    {% endif %}
+                </p>
+            </div>
+            <div class="action-button-wrapper">
+                <a href="{{ url_for('analysis.result', analysis_id=latest_analysis.id) }}" class="btn btn-primary">
+                    <span>View Result Report</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ===================================================== -->
+    <!-- RESUME ANALYSIS OVERVIEW SECTION -->
+    <!-- ===================================================== -->
+    {% if latest_analysis %}
+    <div class="analysis-section-wrapper" id="analysis-overview">
         <div class="card">
             <div class="card-header">
-                <h3><i class="fa-solid fa-folder-open"></i> Uploaded Resumes</h3>
+                <h3><i class="fa-solid fa-chart-pie text-primary"></i> Latest Analysis Overview — {{ latest_analysis.job_title }}</h3>
+                <span class="badge-role-tag"><i class="fa-regular fa-file-pdf"></i> {{ latest_analysis.filename }}</span>
             </div>
             <div class="card-body">
-                {% if resumes %}
-                    <ul class="resume-list">
-                        {% for r in resumes %}
-                            <li class="resume-item">
-                                <div class="resume-file-info">
-                                    <i class="fa-solid fa-file-pdf text-danger fa-lg"></i>
-                                    <div>
-                                        <div class="resume-filename">{{ r.filename }}</div>
-                                        <small class="text-muted">Uploaded {{ r.uploaded_at[:10] }}</small>
-                                    </div>
-                                </div>
-                                <div class="resume-actions">
-                                    <a href="{{ url_for('analysis.upload_page', selected_resume=r.id) }}" class="btn-icon text-primary" title="Analyze with Job">
-                                        <i class="fa-solid fa-wand-magic-sparkles"></i>
-                                    </a>
-                                    <form action="{{ url_for('resume.delete_resume', resume_id=r.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Delete this resume?');">
-                                        <button type="submit" class="btn-icon text-danger" title="Delete Resume">
-                                            <i class="fa-solid fa-trash-can"></i>
-                                        </button>
-                                    </form>
-                                </div>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <div class="empty-state compact">
-                        <i class="fa-solid fa-file-arrow-up empty-icon-sm"></i>
-                        <p>No resumes saved.</p>
+                <div class="analysis-scores-row">
+                    <div class="score-summary-box">
+                        <div class="score-circle-outer score-border-{% if latest_analysis.match_score >= 75 %}green{% elif latest_analysis.match_score >= 50 %}orange{% else %}red{% endif %}">
+                            <span class="score-number-big">{{ latest_analysis.match_score }}%</span>
+                            <span class="score-label-small">Overall Match</span>
+                        </div>
                     </div>
-                {% endif %}
 
-                <div class="mt-3">
-                    <a href="{{ url_for('analysis.upload_page') }}" class="btn btn-outline-primary btn-block">
-                        <i class="fa-solid fa-upload"></i> Upload New Resume PDF
-                    </a>
+                    <div class="score-metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <span class="metric-title">Resume Quality Score</span>
+                                <span class="metric-value">{{ latest_analysis.resume_score }}%</span>
+                            </div>
+                            <div class="progress-bar-track">
+                                <div class="progress-bar-fill fill-green" style="width: {{ latest_analysis.resume_score }}%;"></div>
+                            </div>
+                            <span class="metric-desc">Structure, sections & contact details</span>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <span class="metric-title">Skills Match Score</span>
+                                <span class="metric-value">{{ latest_analysis.skills_match_score }}%</span>
+                            </div>
+                            <div class="progress-bar-track">
+                                <div class="progress-bar-fill fill-blue" style="width: {{ latest_analysis.skills_match_score }}%;"></div>
+                            </div>
+                            <span class="metric-desc">Required tech stack overlap</span>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <span class="metric-title">Keyword Similarity (TF-IDF)</span>
+                                <span class="metric-value">{{ latest_analysis.keyword_match_score }}%</span>
+                            </div>
+                            <div class="progress-bar-track">
+                                <div class="progress-bar-fill fill-orange" style="width: {{ latest_analysis.keyword_match_score }}%;"></div>
+                            </div>
+                            <span class="metric-desc">NLP vector similarity match</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+    {% endif %}
+
+    <!-- ===================================================== -->
+    <!-- TOP 20 JOB ROLE RECOMMENDATIONS -->
+    <!-- ===================================================== -->
+    <section class="card job-recommendations-section" id="recommendations-section">
+        <div class="card-header">
+            <div>
+                <h3><i class="fa-solid fa-briefcase text-primary"></i> 20 Job Role Fit Matrix</h3>
+                <p class="card-subtitle">Real-time match scoring derived from your uploaded resume text across 20 tech roles</p>
+            </div>
+            {% if multiple_role_results %}
+            <span class="top-rank-badge">
+                <i class="fa-solid fa-trophy text-warning"></i> #1 Best Fit: <strong>{{ multiple_role_results[0].job_role }}</strong> ({{ multiple_role_results[0].match_score }}%)
+            </span>
+            {% endif %}
+        </div>
+
+        <div class="card-body">
+            {% if multiple_role_results %}
+            <!-- Top Match Highlight -->
+            <div class="top-match-hero-banner">
+                <div class="hero-left">
+                    <span class="rank-badge-gold">RANK #1 BEST MATCH</span>
+                    <h2 class="top-role-title">{{ multiple_role_results[0].job_role }}</h2>
+                    <p class="top-role-desc">Your profile matches <strong>{{ multiple_role_results[0].match_score }}%</strong> of the technical requirements for this role.</p>
+                    <div class="skills-pill-group mt-2">
+                        {% for skill in multiple_role_results[0].matching_skills[:6] %}
+                            <span class="pill-skill pill-strong"><i class="fa-solid fa-check"></i> {{ skill }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="hero-right text-center">
+                    <div class="match-percentage-badge">
+                        <span class="percent-num">{{ multiple_role_results[0].match_score }}%</span>
+                        <span class="percent-label">Match Fit</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 20 Roles Grid -->
+            <div class="job-roles-grid mt-4">
+                {% for role in multiple_role_results %}
+                <div class="role-fit-card {% if loop.first %}card-border-gold{% endif %}">
+                    <div class="role-card-header">
+                        <span class="role-rank-num">#{{ loop.index }}</span>
+                        <h4 class="role-card-title">{{ role.job_role }}</h4>
+                    </div>
+
+                    <div class="role-score-row">
+                        <div class="progress-bar-track flex-1">
+                            <div class="progress-bar-fill {% if role.match_score >= 75 %}fill-green{% elif role.match_score >= 50 %}fill-orange{% else %}fill-red{% endif %}" style="width: {{ role.match_score }}%;"></div>
+                        </div>
+                        <span class="role-score-value">{{ role.match_score }}%</span>
+                    </div>
+
+                    <div class="role-card-body">
+                        {% if role.matching_skills %}
+                        <div class="skill-mini-list">
+                            <small class="text-success"><i class="fa-solid fa-circle-check"></i> Key Matches:</small>
+                            <span class="mini-skill-text">{{ role.matching_skills[:3]|join(', ') }}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if role.missing_skills %}
+                        <div class="skill-mini-list mt-1">
+                            <small class="text-danger"><i class="fa-solid fa-circle-xmark"></i> Missing:</small>
+                            <span class="mini-skill-text">{{ role.missing_skills[:3]|join(', ') }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state-box text-center p-4">
+                <i class="fa-solid fa-file-circle-plus fa-3x text-muted mb-3"></i>
+                <h4>No Job Recommendations Yet</h4>
+                <p class="text-muted">Upload your PDF resume to compute match scores for 20 tech job roles.</p>
+                <a href="{{ url_for('analysis.upload_page') }}" class="btn btn-primary mt-2">Upload Resume & Scan Roles</a>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- ===================================================== -->
+    <!-- SKILLS SECTION & ROADMAP -->
+    <!-- ===================================================== -->
+    <div class="dashboard-two-col-grid" id="skills-section">
+        <!-- 3-State Skills Breakdown Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-layer-group text-primary"></i> Skills Breakdown</h3>
+            </div>
+            <div class="card-body">
+                {% if latest_analysis %}
+                <!-- Strong Skills (Green) -->
+                <div class="skill-state-block mb-4">
+                    <h4 class="skill-category-title text-success"><i class="fa-solid fa-circle-check"></i> Strong / Matching Skills</h4>
+                    {% if latest_analysis.matching_skills %}
+                        <div class="skills-pill-group">
+                            {% for skill in latest_analysis.matching_skills %}
+                                <span class="pill-skill pill-strong"><i class="fa-solid fa-check"></i> {{ skill }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted italic">No direct technical skills matched in the uploaded resume.</p>
+                    {% endif %}
+                </div>
+
+                <hr class="divider" />
+
+                <!-- Skills to Improve (Orange) -->
+                <div class="skill-state-block mb-4">
+                    <h4 class="skill-category-title text-warning"><i class="fa-solid fa-triangle-exclamation"></i> Skills to Improve</h4>
+                    {% if latest_analysis.missing_skills %}
+                        <div class="skills-pill-group">
+                            {% for skill in latest_analysis.missing_skills[:4] %}
+                                <span class="pill-skill pill-improve"><i class="fa-solid fa-arrow-up text-warning"></i> {{ skill }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-success"><i class="fa-solid fa-star"></i> Excellent skill alignment!</p>
+                    {% endif %}
+                </div>
+
+                <hr class="divider" />
+
+                <!-- Missing Skills (Red) -->
+                <div class="skill-state-block">
+                    <h4 class="skill-category-title text-danger"><i class="fa-solid fa-circle-xmark"></i> Missing Required Skills</h4>
+                    {% if latest_analysis.missing_skills %}
+                        <div class="skills-pill-group">
+                            {% for skill in latest_analysis.missing_skills %}
+                                <span class="pill-skill pill-missing"><i class="fa-solid fa-plus"></i> {{ skill }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-success"><i class="fa-solid fa-check"></i> No critical missing skills detected.</p>
+                    {% endif %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center p-3">Upload a resume to see your strong, improvable, and missing skills breakdown.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- SKILL ROADMAP SECTION -->
+        <div class="card" id="roadmap-section">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-route text-primary"></i> Skill Improvement Roadmap</h3>
+            </div>
+            <div class="card-body">
+                {% if latest_analysis %}
+                <div class="roadmap-vertical-timeline">
+                    <div class="timeline-step step-green">
+                        <div class="timeline-badge"><i class="fa-solid fa-check"></i></div>
+                        <div class="timeline-content">
+                            <span class="timeline-phase">STAGE 1: CURRENT STRENGTHS</span>
+                            <h4 class="timeline-title">Detected Competencies</h4>
+                            <p class="timeline-desc">{{ latest_analysis.matching_skills[:5]|join(', ') if latest_analysis.matching_skills else 'Baseline Resume Formatting' }}</p>
+                        </div>
+                    </div>
+
+                    <div class="timeline-step step-orange">
+                        <div class="timeline-badge"><i class="fa-solid fa-arrow-up"></i></div>
+                        <div class="timeline-content">
+                            <span class="timeline-phase">STAGE 2: SKILLS TO IMPROVE</span>
+                            <h4 class="timeline-title">Priority Skill Targets</h4>
+                            <p class="timeline-desc">{{ latest_analysis.missing_skills[:4]|join(', ') if latest_analysis.missing_skills else 'Quantify Bullet Points with Metrics' }}</p>
+                        </div>
+                    </div>
+
+                    <div class="timeline-step step-blue">
+                        <div class="timeline-badge"><i class="fa-solid fa-graduation-cap"></i></div>
+                        <div class="timeline-content">
+                            <span class="timeline-phase">STAGE 3: RECOMMENDED LEARNING</span>
+                            <h4 class="timeline-title">Actionable Practice Track</h4>
+                            <p class="timeline-desc">Build 1-2 hands-on projects integrating missing tools & add measurable project bullet points to your resume.</p>
+                        </div>
+                    </div>
+
+                    <div class="timeline-step step-purple">
+                        <div class="timeline-badge"><i class="fa-solid fa-trophy"></i></div>
+                        <div class="timeline-content">
+                            <span class="timeline-phase">STAGE 4: TARGET GOAL</span>
+                            <h4 class="timeline-title">Target Job Role</h4>
+                            <p class="timeline-desc"><strong>{{ latest_analysis.job_title }}</strong> — Aim for 85%+ ATS Match Score.</p>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted text-center p-3">Perform a resume analysis to unlock your custom career progression roadmap.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- RESUME IMPROVEMENTS SECTION -->
+    <!-- ===================================================== -->
+    <section class="card" id="improvements-section">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-wand-magic-sparkles text-primary"></i> Actionable Resume Improvements</h3>
+        </div>
+        <div class="card-body">
+            {% if latest_analysis and latest_analysis.recommendations %}
+            <div class="recommendations-grid">
+                {% for rec in latest_analysis.recommendations %}
+                <div class="recommendation-card">
+                    <div class="rec-icon-wrapper"><i class="fa-solid fa-lightbulb text-warning"></i></div>
+                    <div class="rec-text-body">
+                        <h5>Improvement Tip #{{ loop.index }}</h5>
+                        <p>{{ rec }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted text-center p-3">Upload your resume to receive AI recommendations on formatting, keywords, metrics, and bullet point structure.</p>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- ===================================================== -->
+    <!-- MY ANALYSES HISTORY SECTION -->
+    <!-- ===================================================== -->
+    <section class="card" id="analyses-section">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-clock-rotate-left text-primary"></i> My Analysis History</h3>
+            <span class="history-count-badge">{{ total_analyses }} Total Scans</span>
+        </div>
+        <div class="card-body p-0">
+            {% if analyses %}
+            <div class="table-responsive">
+                <table class="table-modern">
+                    <thead>
+                        <tr>
+                            <th>Job Role</th>
+                            <th>Resume File</th>
+                            <th>Match Score</th>
+                            <th>Scan Date</th>
+                            <th class="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in analyses %}
+                        <tr>
+                            <td>
+                                <strong>{{ item.job_title }}</strong>
+                            </td>
+                            <td>
+                                <span class="file-tag"><i class="fa-regular fa-file-pdf text-danger"></i> {{ item.filename }}</span>
+                            </td>
+                            <td>
+                                <span class="score-badge-pill {% if item.match_score >= 75 %}score-high{% elif item.match_score >= 50 %}score-mid{% else %}score-low{% endif %}">
+                                    {{ item.match_score }}%
+                                </span>
+                            </td>
+                            <td>
+                                <span class="text-muted">{{ item.created_at[:10] }}</span>
+                            </td>
+                            <td class="text-right action-buttons-cell">
+                                <a href="{{ url_for('analysis.result', analysis_id=item.id) }}" class="btn btn-sm btn-outline-primary" title="View Full Report">
+                                    <i class="fa-solid fa-eye"></i> View
+                                </a>
+                                <a href="{{ url_for('analysis.download_report', analysis_id=item.id) }}" class="btn btn-sm btn-outline-secondary" title="Download PDF Report">
+                                    <i class="fa-solid fa-download"></i> PDF
+                                </a>
+                                <form action="{{ url_for('analysis.delete_analysis', analysis_id=item.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Delete this analysis record?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Record">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state-box text-center p-4">
+                <i class="fa-solid fa-magnifying-glass-chart fa-3x text-muted mb-3"></i>
+                <p>No analysis history yet.</p>
+                <a href="{{ url_for('analysis.upload_page') }}" class="btn btn-primary">Start Your First Scan</a>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- ===================================================== -->
+    <!-- CAREER EXPLORER: TARGET COMPANIES & LEARNING -->
+    <!-- ===================================================== -->
+    <div class="dashboard-two-col-grid">
+        <!-- Target Companies -->
+        <div class="card" id="companies-section">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-building text-primary"></i> Target Company Types</h3>
+            </div>
+            <div class="card-body">
+                <div class="company-types-list">
+                    <div class="company-card">
+                        <div class="company-icon"><i class="fa-solid fa-rocket text-primary"></i></div>
+                        <div>
+                            <h5>High-Growth Tech Startups</h5>
+                            <p class="text-muted">Seeking Python, Full Stack & AI Engineers for rapid deployment.</p>
+                        </div>
+                    </div>
+                    <div class="company-card mt-3">
+                        <div class="company-icon"><i class="fa-solid fa-shield-halved text-success"></i></div>
+                        <div>
+                            <h5>Enterprise SaaS & Cloud Leaders</h5>
+                            <p class="text-muted">Hiring MLOps, Data Engineers & Systems Engineers.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Learning Resources -->
+        <div class="card" id="learning-section">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-graduation-cap text-primary"></i> Recommended Learning Tracks</h3>
+            </div>
+            <div class="card-body">
+                <div class="learning-list">
+                    <div class="learning-item">
+                        <i class="fa-solid fa-book-bookmark text-primary"></i>
+                        <div>
+                            <h6>Mastering REST APIs & Microservices Architecture</h6>
+                            <small class="text-muted">Recommended to bridge backend skill gaps.</small>
+                        </div>
+                    </div>
+                    <div class="learning-item mt-3">
+                        <i class="fa-solid fa-laptop-code text-success"></i>
+                        <div>
+                            <h6>Docker & Kubernetes Container Deployment</h6>
+                            <small class="text-muted">Boost your MLOps & DevOps alignment by 25%.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- USER PROFILE & UPLOADED RESUMES -->
+    <!-- ===================================================== -->
+    <section class="card" id="profile-section">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-circle-user text-primary"></i> Profile & Uploaded Resumes</h3>
+        </div>
+        <div class="card-body">
+            <div class="profile-info-row mb-4">
+                <div>
+                    <h4>{{ session.get('user_name', 'User') }}</h4>
+                    <p class="text-muted"><i class="fa-solid fa-envelope"></i> {{ session.get('user_email', 'User') }}</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('analysis.upload_page') }}" class="btn btn-outline-primary">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Upload New Resume PDF
+                    </a>
+                </div>
+            </div>
+
+            <h5>Saved PDF Resumes ({{ total_resumes }})</h5>
+            {% if resumes %}
+            <ul class="saved-resumes-list mt-3">
+                {% for r in resumes %}
+                <li class="saved-resume-item">
+                    <div class="file-meta">
+                        <i class="fa-solid fa-file-pdf text-danger fa-2x"></i>
+                        <div>
+                            <strong class="file-name-text">{{ r.filename }}</strong>
+                            <div class="text-muted"><small>Uploaded on {{ r.uploaded_at[:10] }}</small></div>
+                        </div>
+                    </div>
+                    <div class="file-actions">
+                        <a href="{{ url_for('analysis.upload_page', selected_resume=r.id) }}" class="btn btn-sm btn-outline-primary" title="Analyze this resume">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Analyze
+                        </a>
+                        <form action="{{ url_for('resume.delete_resume', resume_id=r.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Delete this saved resume?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Resume">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted mt-2">No resumes saved in your account.</p>
+            {% endif %}
+        </div>
+    </section>
+
 </div>
 {% endblock %}

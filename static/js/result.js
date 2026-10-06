@@ -1,20 +1,24 @@
-document.addEventListener('DOMContentLoaded', function() {
+/* ==========================================================================
+   RESULT & SCORE GAUGE ANIMATION CONTROLLER
+   ========================================================================== */
+
+document.addEventListener('DOMContentLoaded', () => {
     const scoreElement = document.getElementById('animated-score');
-    if (!scoreElement) return;
+    if (scoreElement) {
+        const targetValue = parseFloat(scoreElement.getAttribute('data-target')) || 0;
+        let currentValue = 0;
+        const duration = 1200; // ms
+        const steps = 40;
+        const increment = targetValue / steps;
+        const stepTime = duration / steps;
 
-    const targetScore = parseFloat(scoreElement.getAttribute('data-target')) || 0;
-    let currentScore = 0;
-    const duration = 1200; // ms
-    const stepTime = 15;
-    const steps = duration / stepTime;
-    const increment = targetScore / steps;
-
-    const timer = setInterval(function() {
-        currentScore += increment;
-        if (currentScore >= targetScore) {
-            currentScore = targetScore;
-            clearInterval(timer);
-        }
-        scoreElement.textContent = Math.round(currentScore) + '%';
-    }, stepTime);
+        const timer = setInterval(() => {
+            currentValue += increment;
+            if (currentValue >= targetValue) {
+                currentValue = targetValue;
+                clearInterval(timer);
+            }
+            scoreElement.textContent = currentValue.toFixed(1) + '%';
+        }, stepTime);
+    }
 });

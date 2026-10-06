@@ -45,13 +45,22 @@ def dashboard():
         else 0.0
     )
 
+    latest_analysis = analyses[0] if analyses else None
+    multiple_role_results = []
+    if latest_analysis and latest_analysis.get('resume_text'):
+        multiple_role_results = calculate_multiple_job_matches(latest_analysis['resume_text'])
+    elif resumes and len(resumes) > 0 and resumes[0].get('resume_text'):
+        multiple_role_results = calculate_multiple_job_matches(resumes[0]['resume_text'])
+
     return render_template(
         'dashboard.html',
         resumes=resumes,
         analyses=analyses,
         total_resumes=total_resumes,
         total_analyses=total_analyses,
-        avg_match_score=avg_match_score
+        avg_match_score=avg_match_score,
+        latest_analysis=latest_analysis,
+        multiple_role_results=multiple_role_results
     )
 
 
