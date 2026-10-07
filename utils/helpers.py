@@ -7,12 +7,21 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
+from models.user_model import UserModel
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
             flash('Please log in to access this page.', 'warning')
             return redirect(url_for('auth.login', next=request.url))
+
+        user = UserModel.get_by_id(session['user_id'])
+        if not user:
+            session.clear()
+            flash('Your session is no longer valid. Please log in again.', 'warning')
+            return redirect(url_for('auth.login'))
+
         return f(*args, **kwargs)
     return decorated_function
 

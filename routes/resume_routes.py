@@ -1,4 +1,5 @@
 import os
+import sqlite3
 from werkzeug.utils import secure_filename
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app, jsonify
 
@@ -53,6 +54,13 @@ def upload():
                     })
                     
                 return redirect(url_for('analysis.upload_page', selected_resume=resume_id))
+
+            except sqlite3.IntegrityError:
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+                session.clear()
+                flash('Your session is no longer valid. Please log in again.', 'warning')
+                return redirect(url_for('auth.login'))
 
             except Exception as e:
                 # Remove saved file on parsing error

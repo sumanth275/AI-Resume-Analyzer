@@ -1,4 +1,5 @@
 import os
+import sqlite3
 from werkzeug.utils import secure_filename
 from flask import (
     Blueprint,
@@ -201,6 +202,22 @@ def analyze():
                     resume_text
                 )
 
+            except sqlite3.IntegrityError:
+
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+
+                session.clear()
+
+                flash(
+                    'Your session is no longer valid. Please log in again.',
+                    'warning'
+                )
+
+                return redirect(
+                    url_for('auth.login')
+                )
+
             except Exception as e:
 
                 if os.path.exists(filepath):
@@ -226,37 +243,50 @@ def analyze():
                 url_for('analysis.upload_page')
             )
 
-    # Save job
-    job_id = JobModel.save_job(
-        user_id,
-        job_title,
-        job_description
-    )
+    try:
+        # Save job
+        job_id = JobModel.save_job(
+            user_id,
+            job_title,
+            job_description
+        )
 
-    # Main ML / NLP analysis
-    results = calculate_job_match(
-        resume_text,
-        job_description
-    )
+        # Main ML / NLP analysis
+        results = calculate_job_match(
+            resume_text,
+            job_description
+        )
 
-    # Multiple predefined job role matching
-    multiple_role_results = calculate_multiple_job_matches(
-        resume_text
-    )
+        # Multiple predefined job role matching
+        multiple_role_results = calculate_multiple_job_matches(
+            resume_text
+        )
 
-    # Save main analysis
-    analysis_id = AnalysisModel.save_analysis(
-        user_id=user_id,
-        resume_id=resume_id,
-        job_id=job_id,
-        match_score=results['match_score'],
-        resume_score=results['resume_score'],
-        skills_match_score=results['skills_match_score'],
-        keyword_match_score=results['keyword_match_score'],
-        matching_skills=results['matching_skills'],
-        missing_skills=results['missing_skills'],
-        recommendations=results['recommendations']
-    )
+        # Save main analysis
+        analysis_id = AnalysisModel.save_analysis(
+            user_id=user_id,
+            resume_id=resume_id,
+            job_id=job_id,
+            match_score=results['match_score'],
+            resume_score=results['resume_score'],
+            skills_match_score=results['skills_match_score'],
+            keyword_match_score=results['keyword_match_score'],
+            matching_skills=results['matching_skills'],
+            missing_skills=results['missing_skills'],
+            recommendations=results['recommendations']
+        )
+
+    except sqlite3.IntegrityError:
+        session.clear()
+
+        flash(
+            'Your session is no longer valid. Please log in again.',
+            'warning'
+        )
+
+        return redirect(
+            url_for('auth.login')
+        )
 
     flash(
         'Analysis completed successfully!',
