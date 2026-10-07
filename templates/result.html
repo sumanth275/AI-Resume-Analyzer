@@ -156,8 +156,36 @@
     </div>
 
     <!-- ===================================================== -->
-    <!-- 7. NEXT BEST ACTION -->
+    <!-- FEATURE 4: NEXT BEST ACTION -->
     <!-- ===================================================== -->
+    {% if career_rec and career_rec.next_best_action %}
+    <div class="card next-best-action-card">
+        <div class="action-card-body">
+            <div class="action-icon-wrapper">
+                <div class="action-icon-circle">
+                    <i class="fa-solid fa-bolt-lightning"></i>
+                </div>
+            </div>
+            <div class="action-content">
+                <div class="action-tag">
+                    <i class="fa-solid fa-sparkles"></i> 🎯 NEXT BEST ACTION
+                </div>
+                <h3 class="action-heading">
+                    {{ career_rec.next_best_action.action_text }}
+                </h3>
+                <p class="action-subtext">
+                    <strong>Your next priority:</strong> {{ career_rec.next_best_action.recommendation }}
+                </p>
+            </div>
+            <div class="action-button-wrapper">
+                <a href="{{ url_for('analysis.download_report', analysis_id=analysis.id) }}" class="btn btn-primary action-cta-btn">
+                    <i class="fa-solid fa-file-arrow-down"></i>
+                    <span>Download Report PDF</span>
+                </a>
+            </div>
+        </div>
+    </div>
+    {% else %}
     <div class="card next-best-action-card">
         <div class="action-card-body">
             <div class="action-icon-wrapper">
@@ -192,11 +220,200 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
     <!-- ===================================================== -->
-    <!-- 3. MATCHING VS MISSING SKILLS & 4. AI RECOMMENDATIONS -->
+    <!-- FEATURE 1: TOP 5 JOB RECOMMENDATIONS -->
     <!-- ===================================================== -->
-    <div class="result-details-grid">
+    {% if career_rec and career_rec.top_jobs %}
+    <div class="card mt-4 top-5-jobs-section">
+        <div class="card-header flex-header">
+            <div>
+                <h3>
+                    <i class="fa-solid fa-trophy text-warning"></i>
+                    <span>Top 5 Recommended Career Paths</span>
+                </h3>
+                <p class="text-muted mb-0 sub-header-note">
+                    Roles best aligned with your experience and technical capabilities
+                </p>
+            </div>
+            {% if career_rec.best_job %}
+            <span class="top-rank-badge">
+                🥇 #1 Best Fit: <strong>{{ career_rec.best_job.job_role }}</strong> ({{ career_rec.best_job.match_score }}%)
+            </span>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <div class="top-jobs-grid">
+                {% for job in career_rec.top_jobs %}
+                <div class="top-job-card {% if loop.first %}card-border-gold{% endif %}">
+                    <div class="top-job-header">
+                        <div class="rank-and-title">
+                            <span class="rank-badge-pill {% if loop.index == 1 %}gold{% elif loop.index == 2 %}silver{% elif loop.index == 3 %}bronze{% else %}standard{% endif %}">
+                                {% if loop.index == 1 %}🥇 #1{% elif loop.index == 2 %}🥈 #2{% elif loop.index == 3 %}🥉 #3{% else %}#{{ loop.index }}{% endif %}
+                            </span>
+                            <h4 class="top-job-title">{{ job.job_role }}</h4>
+                        </div>
+                        <span class="top-job-score-badge {% if job.match_score >= 70 %}score-high{% elif job.match_score >= 50 %}score-mid{% else %}score-low{% endif %}">
+                            {{ job.match_score }}% Match
+                        </span>
+                    </div>
+
+                    <div class="top-job-body">
+                        {% if job.matching_skills %}
+                        <div class="skills-mini-block">
+                            <small class="text-success font-weight-bold"><i class="fa-solid fa-circle-check"></i> Matching Skills:</small>
+                            <div class="skills-pill-group compact-pills mt-1">
+                                {% for skill in job.matching_skills[:5] %}
+                                    <span class="pill-skill pill-strong-sm"><i class="fa-solid fa-check"></i> {{ skill }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if job.missing_skills %}
+                        <div class="skills-mini-block mt-2">
+                            <small class="text-danger font-weight-bold"><i class="fa-solid fa-circle-xmark"></i> Missing Skills:</small>
+                            <div class="skills-pill-group compact-pills mt-1">
+                                {% for skill in job.missing_skills[:4] %}
+                                    <span class="pill-skill pill-missing-sm"><i class="fa-solid fa-plus"></i> {{ skill }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="top-job-recommendation-box mt-3">
+                            <i class="fa-solid fa-lightbulb text-warning"></i>
+                            <span>{{ job.recommendation }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ===================================================== -->
+    <!-- FEATURE 2 & 3: SKILL GAP ANALYSIS & PERSONALIZED ROADMAP -->
+    <!-- ===================================================== -->
+    {% if career_rec and career_rec.best_job %}
+    <div class="result-details-grid mt-4">
+        <!-- FEATURE 2: SKILL GAP ANALYSIS FOR #1 JOB -->
+        <div class="card details-card">
+            <div class="card-header">
+                <h3>
+                    <i class="fa-solid fa-bullseye text-primary"></i>
+                    <span>Your Skill Gap — {{ career_rec.best_job.job_role }}</span>
+                </h3>
+                <span class="skills-summary-badge">
+                    {{ career_rec.skill_gap.matching|length }} Matched / {{ career_rec.skill_gap.missing|length }} Missing
+                </span>
+            </div>
+            <div class="card-body">
+                <!-- MATCHING SKILLS -->
+                <div class="skills-block mb-3">
+                    <div class="skills-block-header">
+                        <h4 class="text-success mb-0">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>MATCHING SKILLS</span>
+                        </h4>
+                        <span class="count-pill count-green">{{ career_rec.skill_gap.matching|length }}</span>
+                    </div>
+                    {% if career_rec.skill_gap.matching %}
+                    <div class="skills-pill-group mt-2">
+                        {% for skill in career_rec.skill_gap.matching %}
+                        <span class="pill-skill pill-strong">
+                            <i class="fa-solid fa-check"></i> {{ skill }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted mt-2">No direct matching skills detected for this role.</p>
+                    {% endif %}
+                </div>
+
+                <div class="section-divider"></div>
+
+                <!-- MISSING SKILLS -->
+                <div class="skills-block mb-3">
+                    <div class="skills-block-header">
+                        <h4 class="text-danger mb-0">
+                            <i class="fa-solid fa-circle-xmark"></i>
+                            <span>MISSING SKILLS</span>
+                        </h4>
+                        <span class="count-pill count-orange">{{ career_rec.skill_gap.missing|length }}</span>
+                    </div>
+                    {% if career_rec.skill_gap.missing %}
+                    <div class="skills-pill-group mt-2">
+                        {% for skill in career_rec.skill_gap.missing %}
+                        <span class="pill-skill pill-missing">
+                            <i class="fa-solid fa-plus"></i> {{ skill }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-success mt-2"><i class="fa-solid fa-star"></i> Perfect skill coverage! No missing skills identified.</p>
+                    {% endif %}
+                </div>
+
+                <div class="section-divider"></div>
+
+                <!-- SKILLS TO LEARN NEXT -->
+                <div class="skills-block">
+                    <div class="skills-block-header">
+                        <h4 class="text-primary mb-0">
+                            <i class="fa-solid fa-arrow-up-right-dots"></i>
+                            <span>SKILLS TO LEARN NEXT</span>
+                        </h4>
+                    </div>
+                    {% if career_rec.skill_gap.to_learn %}
+                    <div class="skills-pill-group mt-2">
+                        {% for skill in career_rec.skill_gap.to_learn %}
+                        <span class="pill-skill pill-learn-next">
+                            <i class="fa-solid fa-bolt"></i> {{ skill }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-success mt-2">Ready to apply for {{ career_rec.best_job.job_role }}!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- FEATURE 3: PERSONALIZED ROADMAP -->
+        <div class="card details-card">
+            <div class="card-header">
+                <h3>
+                    <i class="fa-solid fa-map-location-dot text-primary"></i>
+                    <span>Personalized Career Roadmap</span>
+                </h3>
+                <span class="roadmap-badge"><i class="fa-solid fa-timeline"></i> 4 Stages</span>
+            </div>
+            <div class="card-body">
+                <div class="roadmap-stages-wrapper">
+                    {% for stage in career_rec.roadmap %}
+                    <div class="roadmap-stage-box stage-{{ stage.stage }}">
+                        <div class="stage-header">
+                            <span class="stage-num-badge">0{{ stage.stage }}</span>
+                            <h5 class="stage-title">{{ stage.title }}</h5>
+                        </div>
+                        <p class="stage-desc">{{ stage.description }}</p>
+                        <div class="stage-skills-tags">
+                            {% for skill in stage.skills %}
+                                <span class="stage-skill-tag">{{ skill }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- FALLBACK TO BASIC SKILLS BREAKDOWN IF CAREER REC NOT AVAILABLE -->
+    <div class="result-details-grid mt-4">
         <!-- 3. Technical Skills Analysis (Matching vs Missing) -->
         <div class="card details-card">
             <div class="card-header">
@@ -310,88 +527,10 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
     <!-- ===================================================== -->
-    <!-- 6. SKILL IMPROVEMENT ROADMAP -->
-    <!-- ===================================================== -->
-    <div class="card mt-4 roadmap-card">
-        <div class="card-header">
-            <h3>
-                <i class="fa-solid fa-route text-primary"></i>
-                <span>Skill Improvement Roadmap</span>
-            </h3>
-            <span class="roadmap-badge"><i class="fa-solid fa-timeline"></i> 4-Stage Plan</span>
-        </div>
-        <div class="card-body">
-            <div class="roadmap-container">
-                <div class="roadmap-connecting-line"></div>
-                <div class="roadmap-steps-grid">
-                    <!-- Stage 1 -->
-                    <div class="roadmap-step-card stage-green">
-                        <div class="stage-header">
-                            <span class="stage-number">01</span>
-                            <span class="stage-tag">FOUNDATION</span>
-                        </div>
-                        <h5 class="roadmap-box-title">
-                            <i class="fa-solid fa-circle-check text-success"></i>
-                            <span>Current Skills</span>
-                        </h5>
-                        <p class="roadmap-box-desc">
-                            {{ analysis.matching_skills[:5]|join(', ') if analysis.matching_skills else 'Core resume structure and existing technical baseline.' }}
-                        </p>
-                    </div>
-
-                    <!-- Stage 2 -->
-                    <div class="roadmap-step-card stage-orange">
-                        <div class="stage-header">
-                            <span class="stage-number">02</span>
-                            <span class="stage-tag">BUILD</span>
-                        </div>
-                        <h5 class="roadmap-box-title">
-                            <i class="fa-solid fa-arrow-up-right-dots text-warning"></i>
-                            <span>Skills to Improve</span>
-                        </h5>
-                        <p class="roadmap-box-desc">
-                            {{ analysis.missing_skills[:4]|join(', ') if analysis.missing_skills else 'Quantify key experience metrics & bullet impacts.' }}
-                        </p>
-                    </div>
-
-                    <!-- Stage 3 -->
-                    <div class="roadmap-step-card stage-blue">
-                        <div class="stage-header">
-                            <span class="stage-number">03</span>
-                            <span class="stage-tag">APPLY</span>
-                        </div>
-                        <h5 class="roadmap-box-title">
-                            <i class="fa-solid fa-code text-primary"></i>
-                            <span>Practical Projects</span>
-                        </h5>
-                        <p class="roadmap-box-desc">
-                            Build hands-on projects incorporating missing tech tools and write metric-driven bullet points.
-                        </p>
-                    </div>
-
-                    <!-- Stage 4 -->
-                    <div class="roadmap-step-card stage-purple">
-                        <div class="stage-header">
-                            <span class="stage-number">04</span>
-                            <span class="stage-tag">INTERVIEW</span>
-                        </div>
-                        <h5 class="roadmap-box-title">
-                            <i class="fa-solid fa-trophy text-purple"></i>
-                            <span>Target Job Role</span>
-                        </h5>
-                        <p class="roadmap-box-desc">
-                            Ready to apply & interview for <strong>{{ analysis.job_title }}</strong>!
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ===================================================== -->
-    <!-- 5. JOB ROLE RECOMMENDATIONS (20 SUITABLE ROLES RANKING) -->
+    <!-- FEATURE 5: ALL 20 JOB MATCHES -->
     <!-- ===================================================== -->
     {% if multiple_role_results %}
     <div class="card mt-4 roles-ranking-card">
@@ -399,32 +538,31 @@
             <div>
                 <h3>
                     <i class="fa-solid fa-ranking-star text-primary"></i>
-                    <span>Tech Job Role Suitability Ranking</span>
+                    <span>All 20 Suitable Job Role Matches</span>
                 </h3>
                 <p class="text-muted mb-0 sub-header-note">
-                    Automated fit comparison across predefined industry tech profiles
+                    Complete match scoring matrix across all 20 predefined tech career roles
                 </p>
             </div>
-            {% if multiple_role_results and multiple_role_results|length > 0 %}
-            <span class="top-rank-badge">
-                🏆 #1 Match: <strong>{{ multiple_role_results[0].job_role }}</strong> ({{ multiple_role_results[0].match_score }}%)
-            </span>
-            {% endif %}
+            <button type="button" class="btn btn-outline-primary btn-sm" id="toggleAllJobsBtn">
+                <i class="fa-solid fa-eye" id="toggleIcon"></i>
+                <span id="toggleText">View All 20 Job Matches</span>
+            </button>
         </div>
 
-        <div class="card-body">
+        <div class="card-body" id="allJobsContainer" style="display: none;">
             <div class="roles-ranking-list">
                 {% for role in multiple_role_results %}
-                <div class="role-ranking-item {% if loop.first %}item-top-rank{% endif %}">
+                <div class="role-ranking-item {% if loop.index <= 5 %}item-top-rank{% endif %}">
                     <div class="ranking-left">
-                        <span class="rank-number-badge {% if loop.first %}rank-1-badge{% endif %}">
+                        <span class="rank-number-badge {% if loop.index <= 3 %}rank-top-badge{% endif %}">
                             #{{ loop.index }}
                         </span>
                         <div class="ranking-title-group">
                             <strong class="role-name-text">{{ role.job_role }}</strong>
                             {% if loop.first %}
                                 <span class="badge-best-fit">
-                                    <i class="fa-solid fa-crown"></i> Best Matching Role
+                                    <i class="fa-solid fa-crown"></i> #1 Best Fit
                                 </span>
                             {% endif %}
                         </div>

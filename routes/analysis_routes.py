@@ -17,7 +17,8 @@ from models.analysis_model import ResumeModel, JobModel, AnalysisModel
 from services.pdf_parser import extract_text_from_pdf
 from services.job_matcher import (
     calculate_job_match,
-    calculate_multiple_job_matches
+    calculate_multiple_job_matches,
+    get_career_recommendation
 )
 from utils.validators import allowed_file
 from utils.helpers import login_required, generate_pdf_report
@@ -53,6 +54,8 @@ def dashboard():
     elif resumes and len(resumes) > 0 and resumes[0].get('resume_text'):
         multiple_role_results = calculate_multiple_job_matches(resumes[0]['resume_text'])
 
+    career_rec = get_career_recommendation(None, multiple_role_results) if multiple_role_results else None
+
     return render_template(
         'dashboard.html',
         resumes=resumes,
@@ -61,7 +64,8 @@ def dashboard():
         total_analyses=total_analyses,
         avg_match_score=avg_match_score,
         latest_analysis=latest_analysis,
-        multiple_role_results=multiple_role_results
+        multiple_role_results=multiple_role_results,
+        career_rec=career_rec
     )
 
 
@@ -326,11 +330,16 @@ def result(analysis_id):
     multiple_role_results = calculate_multiple_job_matches(
         analysis['resume_text']
     )
+    career_rec = get_career_recommendation(
+        analysis['resume_text'],
+        multiple_role_results
+    )
 
     return render_template(
         'result.html',
         analysis=analysis,
-        multiple_role_results=multiple_role_results
+        multiple_role_results=multiple_role_results,
+        career_rec=career_rec
     )
 
 

@@ -56,4 +56,24 @@ document.addEventListener('DOMContentLoaded', () => {
             bar.style.width = targetWidth;
         }, 120);
     });
+
+    // 3. Toggle All 20 Job Matches Container
+    const toggleBtn = document.getElementById('toggleAllJobsBtn');
+    const container = document.getElementById('allJobsContainer');
+    const toggleText = document.getElementById('toggleText');
+    const toggleIcon = document.getElementById('toggleIcon');
+
+    if (toggleBtn && container) {
+        toggleBtn.addEventListener('click', () => {
+            if (container.style.display === 'none' || !container.style.display) {
+                container.style.display = 'block';
+                if (toggleText) toggleText.textContent = 'Hide 20 Job Matches';
+                if (toggleIcon) toggleIcon.className = 'fa-solid fa-eye-slash';
+            } else {
+                container.style.display = 'none';
+                if (toggleText) toggleText.textContent = 'View All 20 Job Matches';
+                if (toggleIcon) toggleIcon.className = 'fa-solid fa-eye';
+            }
+        });
+    }
 });
