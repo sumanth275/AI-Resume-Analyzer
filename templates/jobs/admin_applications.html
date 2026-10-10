@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Applicants for {{ listing.title }} | Admin Portal{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrapper">
+    <div class="mb-3">
+        <a href="{{ url_for('jobs.admin_dashboard') }}" class="text-primary" style="font-weight: 500; font-size: 0.95rem;">
+            <i class="fa-solid fa-arrow-left"></i> Back to Job Management
+        </a>
+    </div>
+
+    <!-- Job Header Info -->
+    <div class="card mb-4" style="background: #f8fafc; border: 1px solid var(--border-color);">
+        <div class="card-body" style="padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h2 style="font-size: 1.35rem; margin: 0 0 0.25rem 0; color: var(--dark);">
+                    Applicants for: {{ listing.title }}
+                </h2>
+                <div style="color: var(--secondary); font-size: 0.95rem;">
+                    <strong>{{ listing.company }}</strong> &bull; {{ listing.location or 'Location not specified' }}
+                </div>
+            </div>
+            <div>
+                <span style="font-size: 0.9rem; padding: 0.35rem 0.85rem; border-radius: 20px; font-weight: 600; background: var(--primary-light); color: var(--primary);">
+                    <i class="fa-solid fa-users"></i> {{ applications|length }} Total Applicant{{ 's' if applications|length != 1 else '' }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Applicants Table -->
+    <div class="card">
+        <div class="card-header">
+            <h3 style="margin: 0; font-size: 1.15rem;">
+                <i class="fa-solid fa-user-group"></i> Candidates
+            </h3>
+        </div>
+        <div class="card-body p-0">
+            {% if applications %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Candidate Name</th>
+                                <th>Email</th>
+                                <th>Resume File</th>
+                                <th>Cover Letter</th>
+                                <th>Applied Date</th>
+                                <th>Application Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for app in applications %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ app.applicant_name }}</strong>
+                                    </td>
+                                    <td>
+                                        <a href="mailto:{{ app.applicant_email }}">{{ app.applicant_email }}</a>
+                                    </td>
+                                    <td>
+                                        {% if app.resume_filename %}
+                                            <span title="{{ app.resume_filename }}">
+                                                <i class="fa-regular fa-file-pdf text-danger"></i> {{ app.resume_filename }}
+                                            </span>
+                                        {% else %}
+                                            <small class="text-muted">No resume file</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if app.cover_letter %}
+                                            <details>
+                                                <summary style="cursor: pointer; color: var(--primary); font-size: 0.85rem; font-weight: 600;">
+                                                    Read Note
+                                                </summary>
+                                                <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--dark-muted); background: #f8fafc; padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-color); white-space: pre-wrap;">
+                                                    {{ app.cover_letter }}
+                                                </p>
+                                            </details>
+                                        {% else %}
+                                            <small class="text-muted">None</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ app.applied_at[:10] }}</small>
+                                    </td>
+                                    <td>
+                                        <form action="{{ url_for('jobs.admin_update_application_status', application_id=app.id) }}" method="POST" style="display: flex; gap: 0.5rem; align-items: center;">
+                                            <input type="hidden" name="listing_id" value="{{ listing.id }}">
+                                            <select name="status" class="form-control" style="padding: 0.35rem 0.5rem; font-size: 0.85rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+                                                <option value="pending" {% if app.status == 'pending' %}selected{% endif %}>Pending</option>
+                                                <option value="reviewed" {% if app.status == 'reviewed' %}selected{% endif %}>Reviewed</option>
+                                                <option value="shortlisted" {% if app.status == 'shortlisted' %}selected{% endif %}>Shortlisted</option>
+                                                <option value="accepted" {% if app.status == 'accepted' %}selected{% endif %}>Accepted</option>
+                                                <option value="rejected" {% if app.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                                            </select>
+                                            <button type="submit" class="btn btn-sm btn-outline-primary" title="Update Status">
+                                                <i class="fa-solid fa-check"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fa-solid fa-inbox empty-icon"></i>
+                    <p>No candidates have applied to this job listing yet.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

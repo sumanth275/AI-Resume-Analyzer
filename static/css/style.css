@@ -568,6 +568,26 @@ a:hover {
     border-radius: var(--radius-lg);
 }
 
+.btn-outline-warning {
+    background-color: transparent;
+    color: var(--warning);
+    border-color: var(--warning);
+}
+.btn-outline-warning:hover {
+    background-color: var(--warning);
+    color: #ffffff;
+}
+
+.btn-outline-success {
+    background-color: transparent;
+    color: var(--success);
+    border-color: var(--success);
+}
+.btn-outline-success:hover {
+    background-color: var(--success);
+    color: #ffffff;
+}
+
 .btn-block {
     display: flex;
     width: 100%;

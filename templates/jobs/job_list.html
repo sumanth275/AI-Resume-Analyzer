@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Explore Jobs & Career Opportunities | AI Resume Analyzer{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrapper">
+
+    <!-- Header -->
+    <div class="dashboard-header mb-4">
+        <div>
+            <h1><i class="fa-solid fa-briefcase text-primary"></i> Explore Job Openings</h1>
+            <p>Browse active opportunities or find jobs matching your resume skills</p>
+        </div>
+        <div class="header-actions">
+            {% if session.get('user_id') %}
+                <a href="{{ url_for('jobs.recommendations') }}" class="btn btn-outline-primary">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> AI Job Matches
+                </a>
+                <a href="{{ url_for('jobs.my_applications') }}" class="btn btn-outline-primary">
+                    <i class="fa-solid fa-clipboard-check"></i> My Applications
+                </a>
+            {% endif %}
+            {% if session.get('is_admin') %}
+                <a href="{{ url_for('jobs.admin_dashboard') }}" class="btn btn-primary">
+                    <i class="fa-solid fa-gear"></i> Admin Portal
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form action="{{ url_for('jobs.public_jobs') }}" method="GET" class="search-filter-form">
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+                    <div style="flex: 2; min-width: 240px; position: relative;">
+                        <input type="text" name="search" class="form-control" style="width: 100%; padding: 0.65rem 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.95rem;" placeholder="Search by job title, company, or skills (e.g. Python, React)..." value="{{ search }}">
+                    </div>
+                    <div style="flex: 1; min-width: 180px;">
+                        <input type="text" name="location" class="form-control" style="width: 100%; padding: 0.65rem 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.95rem;" placeholder="Location (e.g. Remote, NY)..." value="{{ location }}">
+                    </div>
+                    <div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa-solid fa-magnifying-glass"></i> Search
+                        </button>
+                        {% if search or location %}
+                            <a href="{{ url_for('jobs.public_jobs') }}" class="btn btn-outline-secondary">
+                                <i class="fa-solid fa-xmark"></i> Clear
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- AI Personalized Recommendations Banner (for logged in users with resumes) -->
+    {% if recommendations %}
+        <div class="card mb-4" style="border: 1px solid #c7d2fe; background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);">
+            <div class="card-header" style="background: transparent; border-bottom: 1px solid #e0e7ff; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="color: var(--primary); margin: 0; font-size: 1.15rem;">
+                    <i class="fa-solid fa-sparkles"></i> Recommended For You Based on Your Resume
+                </h3>
+                <a href="{{ url_for('jobs.recommendations') }}" style="font-size: 0.9rem; font-weight: 600;">
+                    View All Matches <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+            <div class="card-body">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem;">
+                    {% for rec in recommendations %}
+                        <div class="card" style="margin: 0; border: 1px solid #e2e8f0; box-shadow: var(--shadow-sm); transition: transform 0.2s ease;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
+                            <div class="card-body" style="padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                                        <h4 style="font-size: 1.05rem; margin: 0; color: var(--dark);">{{ rec.title }}</h4>
+                                        <span class="score-badge {% if rec.match_score >= 70 %}score-high{% elif rec.match_score >= 40 %}score-mid{% else %}score-low{% endif %}" title="Skill overlap score">
+                                            {{ rec.match_score }}% Match
+                                        </span>
+                                    </div>
+                                    <div style="font-size: 0.9rem; color: var(--dark-muted); margin-bottom: 0.75rem;">
+                                        <i class="fa-solid fa-building text-muted"></i> {{ rec.company }}
+                                        {% if rec.location %}
+                                            &bull; <i class="fa-solid fa-location-dot text-muted"></i> {{ rec.location }}
+                                        {% endif %}
+                                    </div>
+                                    {% if rec.matching_skills %}
+                                        <div style="margin-bottom: 0.75rem;">
+                                            <small style="color: var(--success); font-weight: 600;">Matching skills:</small>
+                                            <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.25rem;">
+                                                {% for skill in rec.matching_skills[:3] %}
+                                                    <span style="background: var(--success-light); color: var(--success); font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 500;">
+                                                        ✓ {{ skill }}
+                                                    </span>
+                                                {% endfor %}
+                                                {% if rec.matching_skills|length > 3 %}
+                                                    <span style="font-size: 0.75rem; color: var(--secondary);">+{{ rec.matching_skills|length - 3 }} more</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">
+                                    <span style="font-size: 0.8rem; text-transform: uppercase; font-weight: 600; color: {% if rec.application_type == 'internal' %}var(--primary){% else %}var(--warning){% endif %};">
+                                        <i class="fa-solid {% if rec.application_type == 'internal' %}fa-bolt{% else %}fa-arrow-up-right-from-square{% endif %}"></i> {{ rec.application_type }}
+                                    </span>
+                                    <a href="{{ url_for('jobs.job_detail', listing_id=rec.id) }}" class="btn btn-sm btn-outline-primary">
+                                        View Details
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Job Listings Grid -->
+    <div class="card">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3>
+                <i class="fa-solid fa-list-check"></i> Available Positions
+                <span style="font-size: 0.9rem; font-weight: normal; color: var(--secondary);">({{ listings|length }} found)</span>
+            </h3>
+        </div>
+        <div class="card-body">
+            {% if listings %}
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.5rem;">
+                    {% for job in listings %}
+                        <div class="card" style="margin: 0; border: 1px solid var(--border-color); display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--shadow-sm); transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-md)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)';">
+                            <div class="card-body" style="padding: 1.5rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                                    <div>
+                                        <h3 style="font-size: 1.2rem; margin: 0 0 0.25rem 0; color: var(--dark);">{{ job.title }}</h3>
+                                        <div style="font-size: 0.95rem; font-weight: 500; color: var(--primary);">
+                                            <i class="fa-solid fa-building"></i> {{ job.company }}
+                                        </div>
+                                    </div>
+                                    <span style="font-size: 0.75rem; padding: 0.25rem 0.65rem; border-radius: 20px; font-weight: 600; text-transform: uppercase; background: {% if job.application_type == 'internal' %}var(--primary-light){% else %}var(--warning-light){% endif %}; color: {% if job.application_type == 'internal' %}var(--primary){% else %}var(--warning){% endif %}; border: 1px solid {% if job.application_type == 'internal' %}#c7d2fe{% else %}#fde68a{% endif %};">
+                                        <i class="fa-solid {% if job.application_type == 'internal' %}fa-bolt{% else %}fa-arrow-up-right-from-square{% endif %}"></i> {{ job.application_type }}
+                                    </span>
+                                </div>
+
+                                <div style="font-size: 0.85rem; color: var(--secondary); margin-bottom: 1rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+                                    {% if job.location %}
+                                        <span><i class="fa-solid fa-location-dot"></i> {{ job.location }}</span>
+                                    {% endif %}
+                                    <span><i class="fa-regular fa-clock"></i> {{ job.created_at[:10] }}</span>
+                                </div>
+
+                                <p style="font-size: 0.9rem; color: var(--dark-muted); margin-bottom: 1rem; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
+                                    {{ job.description }}
+                                </p>
+
+                                {% if job.required_skills %}
+                                    <div style="margin-bottom: 1.25rem;">
+                                        <div style="display: flex; flex-wrap: wrap; gap: 0.35rem;">
+                                            {% for skill in job.required_skills.split(',')[:4] %}
+                                                {% if skill.strip() %}
+                                                    <span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 500;">
+                                                        {{ skill.strip() }}
+                                                    </span>
+                                                {% endif %}
+                                            {% endfor %}
+                                            {% if job.required_skills.split(',')|length > 4 %}
+                                                <span style="font-size: 0.75rem; color: var(--secondary); align-self: center;">+more</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                                    {% if job.id in applied_ids %}
+                                        <span style="color: var(--success); font-weight: 600; font-size: 0.85rem;">
+                                            <i class="fa-solid fa-circle-check"></i> Applied
+                                        </span>
+                                    {% else %}
+                                        <span style="font-size: 0.85rem; color: var(--secondary);">
+                                            <i class="fa-solid fa-users"></i> {{ job.applicant_count }} applicant{{ 's' if job.applicant_count != 1 else '' }}
+                                        </span>
+                                    {% endif %}
+                                    <a href="{{ url_for('jobs.job_detail', listing_id=job.id) }}" class="btn btn-sm btn-primary">
+                                        View & Apply <i class="fa-solid fa-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fa-solid fa-magnifying-glass empty-icon"></i>
+                    <p>No job listings found matching your criteria.</p>
+                    <a href="{{ url_for('jobs.public_jobs') }}" class="btn btn-primary">View All Openings</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

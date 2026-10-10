@@ -72,6 +72,45 @@ def init_db(app=None):
         FOREIGN KEY (resume_id) REFERENCES resumes (id) ON DELETE CASCADE,
         FOREIGN KEY (job_id) REFERENCES jobs (id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS job_listings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        company TEXT NOT NULL,
+        location TEXT,
+        description TEXT NOT NULL,
+        required_skills TEXT,
+        application_type TEXT NOT NULL DEFAULT 'internal' CHECK (application_type IN ('internal', 'external')),
+        application_url TEXT,
+        is_active INTEGER DEFAULT 1,
+        created_by INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE SET NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS job_applications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        job_listing_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        resume_id INTEGER,
+        cover_letter TEXT,
+        status TEXT DEFAULT 'pending',
+        applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (job_listing_id) REFERENCES job_listings (id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+        FOREIGN KEY (resume_id) REFERENCES resumes (id) ON DELETE SET NULL,
+        UNIQUE (job_listing_id, user_id)
+    );
     """)
+
+    # Safe migration: ensure is_admin column exists on users
+    cursor.execute("PRAGMA table_info(users);")
+    user_cols = [col[1] for col in cursor.fetchall()]
+    if 'is_admin' not in user_cols:
+        cursor.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0;")
+        # Set primary admin account if none exists
+        cursor.execute("UPDATE users SET is_admin = 1 WHERE email = 'suman98@gmail.com' OR id = 1;")
+
     conn.commit()
     conn.close()

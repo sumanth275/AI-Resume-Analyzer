@@ -58,7 +58,7 @@ def test_stale_session_redirect(client):
     # Set an invalid/nonexistent user_id in session (e.g. after DB reset)
     with client.session_transaction() as sess:
         sess['user_id'] = 99999
-        sess['user_name'] = 'Stale User'
+        sess['user_name'] = 'Ghost User'
 
     # Accessing protected route should clear session, flash message, and redirect to login
     res = client.get('/dashboard', follow_redirects=True)

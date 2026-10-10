@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Job Management | AI Resume Analyzer{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrapper">
+    <!-- Header -->
+    <div class="dashboard-header mb-4">
+        <div>
+            <h1><i class="fa-solid fa-gear text-primary"></i> Job Listings Management</h1>
+            <p>Admin panel to create, edit, activate/deactivate, and manage job openings</p>
+        </div>
+        <div class="header-actions">
+            <a href="{{ url_for('jobs.admin_create_listing') }}" class="btn btn-primary btn-lg">
+                <i class="fa-solid fa-plus-circle"></i> Add New Job Listing
+            </a>
+            <a href="{{ url_for('jobs.public_jobs') }}" class="btn btn-outline-primary">
+                <i class="fa-solid fa-eye"></i> View Public Jobs Page
+            </a>
+        </div>
+    </div>
+
+    <!-- Listings Table -->
+    <div class="card">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-size: 1.15rem;">
+                <i class="fa-solid fa-briefcase"></i> All Job Listings
+                <span style="font-size: 0.9rem; font-weight: normal; color: var(--secondary);">({{ listings|length }})</span>
+            </h3>
+        </div>
+        <div class="card-body p-0">
+            {% if listings %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Title & Company</th>
+                                <th>Location</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Applicants</th>
+                                <th>Created</th>
+                                <th class="text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for job in listings %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ job.title }}</strong>
+                                        <div style="font-size: 0.85rem; color: var(--primary);">
+                                            <i class="fa-solid fa-building"></i> {{ job.company }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <small>{{ job.location or 'Not specified' }}</small>
+                                    </td>
+                                    <td>
+                                        <span style="font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; text-transform: uppercase; background: {% if job.application_type == 'internal' %}var(--primary-light){% else %}var(--warning-light){% endif %}; color: {% if job.application_type == 'internal' %}var(--primary){% else %}var(--warning){% endif %};">
+                                            {{ job.application_type }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if job.is_active %}
+                                            <span class="badge badge-success" style="padding: 0.35rem 0.65rem; border-radius: 20px; font-size: 0.75rem;">
+                                                <i class="fa-solid fa-circle-check"></i> Active
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-secondary" style="padding: 0.35rem 0.65rem; border-radius: 20px; font-size: 0.75rem; background: #64748b; color: #fff;">
+                                                <i class="fa-solid fa-circle-xmark"></i> Inactive
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if job.application_type == 'internal' %}
+                                            <a href="{{ url_for('jobs.admin_view_applications', listing_id=job.id) }}" style="font-weight: 600;">
+                                                <i class="fa-solid fa-users"></i> {{ job.applicant_count }}
+                                            </a>
+                                        {% else %}
+                                            <small class="text-muted">External</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ job.created_at[:10] }}</small>
+                                    </td>
+                                    <td class="text-right action-cells">
+                                        <a href="{{ url_for('jobs.job_detail', listing_id=job.id) }}" class="btn btn-sm btn-outline-primary" title="Preview Public Page">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('jobs.admin_edit_listing', listing_id=job.id) }}" class="btn btn-sm btn-outline-secondary" title="Edit Listing">
+                                            <i class="fa-solid fa-pen-to-square"></i>
+                                        </a>
+                                        <form action="{{ url_for('jobs.admin_toggle_listing', listing_id=job.id) }}" method="POST" style="display:inline;">
+                                            <button type="submit" class="btn btn-sm {% if job.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}" title="{% if job.is_active %}Deactivate{% else %}Activate{% endif %}">
+                                                <i class="fa-solid {% if job.is_active %}fa-pause{% else %}fa-play{% endif %}"></i>
+                                            </button>
+                                        </form>
+                                        <form action="{{ url_for('jobs.admin_delete_listing', listing_id=job.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this job listing? All associated applications will also be removed.');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Listing">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fa-solid fa-briefcase empty-icon"></i>
+                    <p>No job listings created yet.</p>
+                    <a href="{{ url_for('jobs.admin_create_listing') }}" class="btn btn-primary">Create Your First Job Listing</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

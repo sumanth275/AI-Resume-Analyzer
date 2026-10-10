@@ -5,6 +5,7 @@ from database.db import init_db, close_db
 from routes.auth_routes import auth_bp
 from routes.resume_routes import resume_bp
 from routes.analysis_routes import analysis_bp
+from routes.job_routes import job_bp
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -21,6 +22,7 @@ def create_app(config_class=Config):
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(resume_bp, url_prefix='/resume')
     app.register_blueprint(analysis_bp, url_prefix='/')
+    app.register_blueprint(job_bp, url_prefix='/jobs')
 
     @app.route('/')
     def index():

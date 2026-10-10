@@ -25,11 +25,32 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('Please log in to access this page.', 'warning')
+            return redirect(url_for('auth.login', next=request.url))
+
+        user = UserModel.get_by_id(session['user_id'])
+        if not user:
+            session.clear()
+            flash('Your session is no longer valid. Please log in again.', 'warning')
+            return redirect(url_for('auth.login'))
+
+        if not user['is_admin']:
+            flash('Access denied. Administrator privileges required.', 'danger')
+            return redirect(url_for('jobs.public_jobs'))
+
+        return f(*args, **kwargs)
+    return decorated_function
+
 def generate_pdf_report(analysis):
     """
     Generates a beautifully formatted PDF report of the analysis results
     using ReportLab and returns a BytesIO buffer.
     """
+    analysis = dict(analysis)
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer,

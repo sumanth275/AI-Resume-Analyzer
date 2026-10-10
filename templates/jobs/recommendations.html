@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}AI Job Recommendations | AI Resume Analyzer{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrapper">
+    <!-- Header -->
+    <div class="dashboard-header mb-4">
+        <div>
+            <h1><i class="fa-solid fa-wand-magic-sparkles text-primary"></i> AI Job Recommendations</h1>
+            <p>Smart job recommendations tailored to the skills extracted from your resume</p>
+        </div>
+        <div>
+            <a href="{{ url_for('jobs.public_jobs') }}" class="btn btn-outline-primary">
+                <i class="fa-solid fa-list"></i> All Job Listings
+            </a>
+        </div>
+    </div>
+
+    <!-- Resume Selector Card -->
+    <div class="card mb-4" style="background: #f8fafc; border: 1px solid var(--border-color);">
+        <div class="card-body" style="padding: 1.25rem;">
+            <form action="{{ url_for('jobs.recommendations') }}" method="GET" style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                <label for="resume_id" style="font-weight: 600; margin: 0; color: var(--dark);">
+                    <i class="fa-regular fa-file-pdf text-danger"></i> Matching against resume:
+                </label>
+                <select name="resume_id" id="resume_id" class="form-control" style="flex: 1; min-width: 260px; padding: 0.55rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm);" onchange="this.form.submit()">
+                    {% for r in user_resumes %}
+                        <option value="{{ r.id }}" {% if selected_resume and selected_resume.id == r.id %}selected{% endif %}>
+                            {{ r.filename }} (Uploaded {{ r.uploaded_at[:10] }})
+                        </option>
+                    {% endfor %}
+                </select>
+                <noscript>
+                    <button type="submit" class="btn btn-sm btn-primary">Switch</button>
+                </noscript>
+            </form>
+        </div>
+    </div>
+
+    <!-- Recommendations Grid -->
+    <div class="card">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-size: 1.15rem;">
+                <i class="fa-solid fa-bullseye text-primary"></i> Recommended Openings
+                <span style="font-size: 0.9rem; font-weight: normal; color: var(--secondary);">({{ recommendations|length }} matches)</span>
+            </h3>
+        </div>
+        <div class="card-body">
+            {% if recommendations %}
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.5rem;">
+                    {% for rec in recommendations %}
+                        <div class="card" style="margin: 0; border: 1px solid var(--border-color); display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--shadow-sm); transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-md)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)';">
+                            <div class="card-body" style="padding: 1.5rem;">
+                                <!-- Top row: title & match score -->
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                                    <div>
+                                        <h3 style="font-size: 1.15rem; margin: 0 0 0.25rem 0; color: var(--dark);">{{ rec.title }}</h3>
+                                        <div style="font-size: 0.95rem; font-weight: 500; color: var(--primary);">
+                                            <i class="fa-solid fa-building"></i> {{ rec.company }}
+                                        </div>
+                                    </div>
+                                    <span class="score-badge {% if rec.match_score >= 70 %}score-high{% elif rec.match_score >= 40 %}score-mid{% else %}score-low{% endif %}" style="font-size: 0.9rem; padding: 0.35rem 0.65rem;" title="Skill match score">
+                                        {{ rec.match_score }}%
+                                    </span>
+                                </div>
+
+                                <div style="font-size: 0.85rem; color: var(--secondary); margin-bottom: 1rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+                                    {% if rec.location %}
+                                        <span><i class="fa-solid fa-location-dot"></i> {{ rec.location }}</span>
+                                    {% endif %}
+                                    <span style="text-transform: uppercase; font-weight: 600; color: {% if rec.application_type == 'internal' %}var(--primary){% else %}var(--warning){% endif %};">
+                                        <i class="fa-solid {% if rec.application_type == 'internal' %}fa-bolt{% else %}fa-arrow-up-right-from-square{% endif %}"></i> {{ rec.application_type }}
+                                    </span>
+                                </div>
+
+                                <!-- Matching Skills -->
+                                {% if rec.matching_skills %}
+                                    <div style="margin-bottom: 0.75rem;">
+                                        <small style="color: var(--success); font-weight: 700;">Matching Skills ({{ rec.matching_skills|length }}):</small>
+                                        <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.25rem;">
+                                            {% for skill in rec.matching_skills[:5] %}
+                                                <span style="background: var(--success-light); color: var(--success); font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 500;">
+                                                    ✓ {{ skill }}
+                                                </span>
+                                            {% endfor %}
+                                            {% if rec.matching_skills|length > 5 %}
+                                                <span style="font-size: 0.75rem; color: var(--secondary); align-self: center;">+{{ rec.matching_skills|length - 5 }} more</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+
+                                <!-- Missing Skills -->
+                                {% if rec.missing_skills %}
+                                    <div style="margin-bottom: 1.25rem;">
+                                        <small style="color: var(--secondary); font-weight: 600;">Skills to Learn / Missing ({{ rec.missing_skills|length }}):</small>
+                                        <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.25rem;">
+                                            {% for skill in rec.missing_skills[:3] %}
+                                                <span style="background: #f1f5f9; color: #64748b; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 500;">
+                                                    • {{ skill }}
+                                                </span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+
+                                <!-- Action button -->
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                                    {% if rec.id in applied_ids %}
+                                        <span style="color: var(--success); font-weight: 600; font-size: 0.85rem;">
+                                            <i class="fa-solid fa-circle-check"></i> Applied
+                                        </span>
+                                    {% else %}
+                                        <span style="font-size: 0.85rem; color: var(--secondary);">
+                                            <i class="fa-solid fa-users"></i> {{ rec.applicant_count }} applicant{{ 's' if rec.applicant_count != 1 else '' }}
+                                        </span>
+                                    {% endif %}
+                                    <a href="{{ url_for('jobs.job_detail', listing_id=rec.id) }}" class="btn btn-sm btn-primary">
+                                        View & Apply <i class="fa-solid fa-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fa-solid fa-wand-magic-sparkles empty-icon"></i>
+                    <p>No active job listings are available right now.</p>
+                    <a href="{{ url_for('jobs.public_jobs') }}" class="btn btn-primary">Explore All Jobs</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

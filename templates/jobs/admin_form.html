@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if action == 'create' %}Create Job Listing{% else %}Edit Job Listing{% endif %} | Admin Portal
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrapper">
+    <div class="mb-3">
+        <a href="{{ url_for('jobs.admin_dashboard') }}" class="text-primary" style="font-weight: 500; font-size: 0.95rem;">
+            <i class="fa-solid fa-arrow-left"></i> Back to Job Management
+        </a>
+    </div>
+
+    <div class="card" style="max-width: 800px; margin: 0 auto;">
+        <div class="card-header">
+            <h2 style="font-size: 1.35rem; margin: 0;">
+                <i class="fa-solid {% if action == 'create' %}fa-plus-circle{% else %}fa-pen-to-square{% endif %} text-primary"></i>
+                {% if action == 'create' %}Create New Job Listing{% else %}Edit Job Listing: {{ form_data.title }}{% endif %}
+            </h2>
+        </div>
+        <div class="card-body" style="padding: 2rem;">
+            <form method="POST" action="{% if action == 'create' %}{{ url_for('jobs.admin_create_listing') }}{% else %}{{ url_for('jobs.admin_edit_listing', listing_id=listing.id) }}{% endif %}">
+
+                <!-- Job Title & Company -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.25rem;">
+                    <div class="form-group">
+                        <label for="title" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Job Title <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" id="title" name="title" class="form-control" required style="width: 100%; padding: 0.65rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm);" placeholder="e.g. Senior Backend Engineer" value="{{ form_data.title or '' }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="company" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Company Name <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" id="company" name="company" class="form-control" required style="width: 100%; padding: 0.65rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm);" placeholder="e.g. Acme Tech Solutions" value="{{ form_data.company or '' }}">
+                    </div>
+                </div>
+
+                <!-- Location & Application Type -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.25rem;">
+                    <div class="form-group">
+                        <label for="location" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Location <span class="text-muted">(Optional)</span>
+                        </label>
+                        <input type="text" id="location" name="location" class="form-control" style="width: 100%; padding: 0.65rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm);" placeholder="e.g. Remote, San Francisco, CA" value="{{ form_data.location or '' }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="application_type" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Application Method <span class="text-danger">*</span>
+                        </label>
+                        <select id="application_type" name="application_type" class="form-control" required style="width: 100%; padding: 0.65rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm);" onchange="toggleUrlField()">
+                            <option value="internal" {% if form_data.application_type == 'internal' or not form_data.application_type %}selected{% endif %}>
+                                Internal (Candidates apply on this portal with resume)
+                            </option>
+                            <option value="external" {% if form_data.application_type == 'external' %}selected{% endif %}>
+                                External (Redirect to official company URL)
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- External URL (Conditional) -->
+                <div class="form-group mb-3" id="urlGroup" style="display: {% if form_data.application_type == 'external' %}block{% else %}none{% endif %};">
+                    <label for="application_url" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                        Official Application URL <span class="text-danger">*</span>
+                    </label>
+                    <input type="url" id="application_url" name="application_url" class="form-control" style="width: 100%; padding: 0.65rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm);" placeholder="https://careers.company.com/jobs/123" value="{{ form_data.application_url or '' }}">
+                    <small class="text-muted">Must begin with http:// or https://</small>
+                </div>
+
+                <!-- Required Skills -->
+                <div class="form-group mb-3">
+                    <label for="required_skills" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                        Required Skills <span class="text-muted">(Comma-separated)</span>
+                    </label>
+                    <input type="text" id="required_skills" name="required_skills" class="form-control" style="width: 100%; padding: 0.65rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm);" placeholder="e.g. Python, Flask, SQLite, Machine Learning, Docker" value="{{ form_data.required_skills or '' }}">
+                    <small class="text-muted">Used by our AI matcher to recommend this job to matching candidates.</small>
+                </div>
+
+                <!-- Description -->
+                <div class="form-group mb-4">
+                    <label for="description" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                        Job Description & Requirements <span class="text-danger">*</span>
+                    </label>
+                    <textarea id="description" name="description" rows="7" class="form-control" required style="width: 100%; padding: 0.65rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.95rem;" placeholder="Detailed job requirements, responsibilities, and benefits...">{{ form_data.description or '' }}</textarea>
+                </div>
+
+                <!-- Active Status -->
+                <div class="form-group mb-4" style="display: flex; align-items: center; gap: 0.75rem;">
+                    <input type="checkbox" id="is_active" name="is_active" value="1" style="width: 1.15rem; height: 1.15rem; cursor: pointer;" {% if form_data.is_active == 1 or form_data.is_active is not defined or action == 'create' %}checked{% endif %}>
+                    <label for="is_active" style="font-weight: 600; cursor: pointer; margin: 0;">
+                        Active Listing (Make visible to job seekers on public portal)
+                    </label>
+                </div>
+
+                <!-- Submit Button -->
+                <div style="display: flex; justify-content: flex-end; gap: 1rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
+                    <a href="{{ url_for('jobs.admin_dashboard') }}" class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        {% if action == 'create' %}Publish Job Listing{% else %}Save Changes{% endif %}
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleUrlField() {
+    const typeSelect = document.getElementById('application_type');
+    const urlGroup = document.getElementById('urlGroup');
+    const urlInput = document.getElementById('application_url');
+    if (typeSelect.value === 'external') {
+        urlGroup.style.display = 'block';
+        urlInput.setAttribute('required', 'required');
+    } else {
+        urlGroup.style.display = 'none';
+        urlInput.removeAttribute('required');
+    }
+}
+</script>
+{% endblock %}

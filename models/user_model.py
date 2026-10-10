@@ -3,20 +3,25 @@ from database.db import get_db
 
 class UserModel:
     @staticmethod
-    def create_user(name, email, password):
+    def create_user(name, email, password, is_admin=0):
         db = get_db()
         hashed_pw = generate_password_hash(password)
         try:
             cursor = db.cursor()
             cursor.execute(
-                "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
-                (name, email.strip().lower(), hashed_pw)
+                "INSERT INTO users (name, email, password, is_admin) VALUES (?, ?, ?, ?)",
+                (name, email.strip().lower(), hashed_pw, is_admin)
             )
             db.commit()
             return cursor.lastrowid
         except Exception as e:
             db.rollback()
             raise e
+
+    @staticmethod
+    def is_admin(user_id):
+        user = UserModel.get_by_id(user_id)
+        return bool(user and user['is_admin'])
 
     @staticmethod
     def get_by_email(email):

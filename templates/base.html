@@ -1,229 +1,330 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}AI Resume Analyzer & Career Intelligence{% endblock %}</title>
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>
+        {% block title %}
+        AI Resume Analyzer & Job Matcher
+        {% endblock %}
+    </title>
+
+
     <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect"
+          href="https://fonts.googleapis.com">
+
+    <link rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap"
+          rel="stylesheet">
+
+
     <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <!-- Main CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    {% block extra_css %}{% endblock %}
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+
+    <!-- Main Website CSS -->
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+
+    <!-- Page-Specific CSS -->
+    {% block extra_css %}
+    {% endblock %}
+
 </head>
+
+
 <body>
 
-    {% if session.get('user_id') %}
-    <!-- AUTHENTICATED CAREER DASHBOARD APP LAYOUT -->
-    <div class="app-layout" id="appLayout">
-        <!-- Sidebar Navigation -->
-        <aside class="app-sidebar" id="appSidebar">
-            <div class="sidebar-brand">
-                <a href="{{ url_for('analysis.dashboard') }}" class="brand-link">
-                    <div class="brand-logo-icon">
-                        <i class="fa-solid fa-sparkles"></i>
-                    </div>
-                    <div class="brand-text-wrapper">
-                        <span class="brand-title">Career<span class="brand-accent">AI</span></span>
-                        <span class="brand-subtitle">Resume Intelligence</span>
-                    </div>
-                </a>
-            </div>
 
-            <nav class="sidebar-menu">
-                <div class="menu-category">MAIN NAVIGATION</div>
-                
-                <a href="{{ url_for('analysis.dashboard') }}" class="sidebar-link {% if request.endpoint == 'analysis.dashboard' %}active{% endif %}">
-                    <i class="fa-solid fa-chart-pie sidebar-icon"></i>
-                    <span>Dashboard</span>
-                </a>
+    <!-- ===================================================== -->
+    <!-- NAVIGATION BAR -->
+    <!-- ===================================================== -->
 
-                <a href="{{ url_for('analysis.upload_page') }}" class="sidebar-link {% if request.endpoint == 'analysis.upload_page' %}active{% endif %}">
-                    <i class="fa-solid fa-cloud-arrow-up sidebar-icon"></i>
-                    <span>Upload Resume</span>
-                </a>
+    <nav class="navbar">
 
-                <a href="{{ url_for('analysis.dashboard') }}#analyses-section" class="sidebar-link">
-                    <i class="fa-solid fa-clock-rotate-left sidebar-icon"></i>
-                    <span>My Analyses</span>
-                </a>
+        <div class="nav-container">
 
-                <a href="{{ url_for('analysis.dashboard') }}#recommendations-section" class="sidebar-link">
-                    <i class="fa-solid fa-briefcase sidebar-icon"></i>
-                    <span>Job Recommendations</span>
+
+            <!-- Logo / Brand -->
+
+            <a href="{{ url_for('index') }}"
+               class="nav-brand">
+
+                <i class="fa-solid fa-robot brand-icon"></i>
+
+                <span class="brand-text">
+                    Resume<span class="brand-highlight">AI</span>
+                </span>
+
+            </a>
+
+
+            <!-- Navigation Menu -->
+
+            <div class="nav-menu">
+
+                <!-- Explore Jobs (Visible to all) -->
+                <a href="{{ url_for('jobs.public_jobs') }}"
+                   class="nav-link
+                   {% if request.blueprint == 'jobs' and request.endpoint in ['jobs.public_jobs', 'jobs.job_detail', 'jobs.recommendations'] %}
+                   active
+                   {% endif %}">
+                    <i class="fa-solid fa-briefcase"></i>
+                    Jobs
                 </a>
 
-                <a href="{{ url_for('analysis.dashboard') }}#roadmap-section" class="sidebar-link">
-                    <i class="fa-solid fa-route sidebar-icon"></i>
-                    <span>Skill Roadmap</span>
-                </a>
+                {% if session.get('user_id') %}
 
-                <a href="{{ url_for('analysis.dashboard') }}#improvements-section" class="sidebar-link">
-                    <i class="fa-solid fa-wand-magic-sparkles sidebar-icon"></i>
-                    <span>Resume Improvements</span>
-                </a>
 
-                <div class="menu-category">CAREER EXPLORER</div>
+                    <!-- Dashboard -->
 
-                <a href="{{ url_for('analysis.dashboard') }}#companies-section" class="sidebar-link">
-                    <i class="fa-solid fa-building sidebar-icon"></i>
-                    <span>Target Companies</span>
-                </a>
+                    <a href="{{ url_for('analysis.dashboard') }}"
+                       class="nav-link
+                       {% if request.endpoint == 'analysis.dashboard' %}
+                       active
+                       {% endif %}">
 
-                <a href="{{ url_for('analysis.dashboard') }}#learning-section" class="sidebar-link">
-                    <i class="fa-solid fa-graduation-cap sidebar-icon"></i>
-                    <span>Learning Resources</span>
-                </a>
+                        <i class="fa-solid fa-gauge-high"></i>
 
-                <a href="{{ url_for('analysis.dashboard') }}#workflow-section" class="sidebar-link">
-                    <i class="fa-solid fa-diagram-project sidebar-icon"></i>
-                    <span>How It Works</span>
-                </a>
+                        Dashboard
 
-                <div class="menu-category">ACCOUNT</div>
-
-                <a href="{{ url_for('analysis.dashboard') }}#profile-section" class="sidebar-link">
-                    <i class="fa-solid fa-circle-user sidebar-icon"></i>
-                    <span>Profile</span>
-                </a>
-
-                <a href="{{ url_for('auth.logout') }}" class="sidebar-link text-danger-link">
-                    <i class="fa-solid fa-right-from-bracket sidebar-icon"></i>
-                    <span>Logout</span>
-                </a>
-            </nav>
-
-            <div class="sidebar-footer">
-                <div class="user-profile-mini">
-                    <div class="user-avatar">
-                        {{ session.get('user_name', 'U')[:1].upper() }}
-                    </div>
-                    <div class="user-details">
-                        <span class="user-name-text">{{ session.get('user_name', 'User') }}</span>
-                        <span class="user-email-text">{{ session.get('user_email', 'Candidate') }}</span>
-                    </div>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Overlay backdrop for mobile drawer -->
-        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
-
-        <!-- Main Wrapper -->
-        <div class="app-main-wrapper">
-            <!-- App Topbar -->
-            <header class="app-topbar">
-                <div class="topbar-left">
-                    <button class="mobile-toggle-btn" onclick="toggleSidebar()" aria-label="Toggle Navigation Menu">
-                        <i class="fa-solid fa-bars"></i>
-                    </button>
-                    <div class="topbar-search">
-                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                        <input type="text" placeholder="Search skills, job roles, or resume features..." class="search-input" />
-                    </div>
-                </div>
-
-                <div class="topbar-right">
-                    <a href="{{ url_for('analysis.upload_page') }}" class="btn btn-primary btn-sm btn-topbar-action">
-                        <i class="fa-solid fa-plus-circle"></i>
-                        <span>New Analysis</span>
                     </a>
-                    
-                    <div class="topbar-user-badge">
-                        <i class="fa-solid fa-shield-halved text-success"></i>
-                        <span class="badge-text">Pro Candidate</span>
-                    </div>
-                </div>
-            </header>
 
-            <!-- Flash Messages Container -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-              {% if messages %}
-                <div class="flash-messages-container">
-                  {% for category, message in messages %}
+
+                    <!-- My Applications -->
+
+                    <a href="{{ url_for('jobs.my_applications') }}"
+                       class="nav-link
+                       {% if request.endpoint == 'jobs.my_applications' %}
+                       active
+                       {% endif %}">
+
+                        <i class="fa-solid fa-clipboard-check"></i>
+
+                        My Applications
+
+                    </a>
+
+
+                    <!-- Admin Portal (Admin Only) -->
+                    {% if session.get('is_admin') %}
+
+                        <a href="{{ url_for('jobs.admin_dashboard') }}"
+                           class="nav-link
+                           {% if request.endpoint in ['jobs.admin_dashboard', 'jobs.admin_create_listing', 'jobs.admin_edit_listing', 'jobs.admin_view_applications'] %}
+                           active
+                           {% endif %}"
+                           style="color: var(--primary); font-weight: 600;">
+
+                            <i class="fa-solid fa-shield-halved"></i>
+
+                            Manage Jobs
+
+                        </a>
+
+                    {% endif %}
+
+
+                    <!-- Analyze Resume -->
+
+                    <a href="{{ url_for('analysis.upload_page') }}"
+                       class="nav-link btn-nav-action
+                       {% if request.endpoint == 'analysis.upload_page' %}
+                       active
+                       {% endif %}">
+
+                        <i class="fa-solid fa-file-circle-plus"></i>
+
+                        Analyze Resume
+
+                    </a>
+
+
+                    <!-- User Information -->
+
+                    <div class="user-dropdown">
+
+                        <span class="user-name">
+
+                            <i class="fa-solid fa-circle-user"></i>
+
+                            {{ session.get('user_name') }}
+
+                            {% if session.get('is_admin') %}
+                                <span style="background: #ef4444; color: #fff; font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; font-weight: 700; text-transform: uppercase;">Admin</span>
+                            {% endif %}
+
+                        </span>
+
+
+                        <!-- Logout -->
+
+                        <a href="{{ url_for('auth.logout') }}"
+                           class="nav-link nav-logout"
+                           title="Logout">
+
+                            <i class="fa-solid fa-right-from-bracket"></i>
+
+                        </a>
+
+                    </div>
+
+
+                {% else %}
+
+
+                    <!-- Login -->
+
+                    <a href="{{ url_for('auth.login') }}"
+                       class="nav-link
+                       {% if request.endpoint == 'auth.login' %}
+                       active
+                       {% endif %}">
+
+                        Login
+
+                    </a>
+
+
+                    <!-- Register -->
+
+                    <a href="{{ url_for('auth.register') }}"
+                       class="btn btn-primary nav-btn">
+
+                        Get Started
+
+                    </a>
+
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </nav>
+
+
+
+    <!-- ===================================================== -->
+    <!-- FLASH MESSAGES -->
+    <!-- ===================================================== -->
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+
+        {% if messages %}
+
+            <div class="flash-messages-container">
+
+                {% for category, message in messages %}
+
                     <div class="alert alert-{{ category }}">
-                      <div class="alert-content">
-                        <i class="fa-solid {% if category == 'success' %}fa-circle-check{% elif category == 'danger' %}fa-circle-xmark{% elif category == 'warning' %}fa-triangle-exclamation{% else %}fa-circle-info{% endif %}"></i>
-                        <span>{{ message }}</span>
-                      </div>
-                      <button type="button" class="alert-close" onclick="this.parentElement.remove();">&times;</button>
+
+                        <div class="alert-content">
+
+                            <i class="fa-solid
+                            {% if category == 'success' %}
+                                fa-circle-check
+                            {% elif category == 'danger' %}
+                                fa-circle-xmark
+                            {% elif category == 'warning' %}
+                                fa-triangle-exclamation
+                            {% else %}
+                                fa-circle-info
+                            {% endif %}">
+                            </i>
+
+                            <span>
+                                {{ message }}
+                            </span>
+
+                        </div>
+
+
+                        <button type="button"
+                                class="alert-close"
+                                onclick="this.parentElement.remove();">
+
+                            &times;
+
+                        </button>
+
                     </div>
-                  {% endfor %}
-                </div>
-              {% endif %}
-            {% endwith %}
 
-            <main class="app-main-body">
-    {% else %}
-    <!-- PUBLIC LANDING & AUTH LAYOUT -->
-    <div class="public-layout">
-        <!-- Public Navbar -->
-        <nav class="public-navbar">
-            <div class="public-nav-container">
-                <a href="{{ url_for('index') }}" class="public-nav-brand">
-                    <i class="fa-solid fa-sparkles brand-icon"></i>
-                    <span class="brand-text">Career<span class="brand-highlight">AI</span></span>
-                </a>
+                {% endfor %}
 
-                <div class="public-nav-links">
-                    <a href="{{ url_for('index') }}#workflow-preview" class="nav-link">How It Works</a>
-                    <a href="{{ url_for('index') }}#features-preview" class="nav-link">Features</a>
-                    <a href="{{ url_for('auth.login') }}" class="nav-link">Log In</a>
-                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-sm">Get Started Free</a>
-                </div>
             </div>
-        </nav>
 
-        <!-- Flash Messages -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            <div class="flash-messages-container public-flash">
-              {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">
-                  <div class="alert-content">
-                    <i class="fa-solid {% if category == 'success' %}fa-circle-check{% elif category == 'danger' %}fa-circle-xmark{% elif category == 'warning' %}fa-triangle-exclamation{% else %}fa-circle-info{% endif %}"></i>
-                    <span>{{ message }}</span>
-                  </div>
-                  <button type="button" class="alert-close" onclick="this.parentElement.remove();">&times;</button>
-                </div>
-              {% endfor %}
-            </div>
-          {% endif %}
-        {% endwith %}
-
-        <main class="public-main-content">
-    {% endif %}
-
-        {% if content_override %}
-            {{ content_override | safe }}
-        {% else %}
-            {% block content %}{% endblock %}
         {% endif %}
 
-    {% if session.get('user_id') %}
-            </main>
+    {% endwith %}
+
+
+
+    <!-- ===================================================== -->
+    <!-- MAIN CONTENT -->
+    <!-- ===================================================== -->
+
+    <main class="main-content">
+
+        {% if content_override %}
+
+            {{ content_override | safe }}
+
+        {% else %}
+
+            {% block content %}
+            {% endblock %}
+
+        {% endif %}
+
+    </main>
+
+
+
+    <!-- ===================================================== -->
+    <!-- FOOTER -->
+    <!-- ===================================================== -->
+
+    <footer class="footer">
+
+        <div class="footer-container">
+
+            <p>
+                &copy; 2026 AI Resume Analyzer & Job Matcher.
+                Built with Python, Flask, PyMuPDF & Scikit-learn.
+            </p>
+
         </div>
-    </div>
-    {% else %}
-        </main>
 
-        <!-- Public Footer -->
-        <footer class="public-footer">
-            <div class="footer-container">
-                <div class="footer-brand">
-                    <i class="fa-solid fa-sparkles"></i> <strong>CareerAI Resume Platform</strong>
-                </div>
-                <p>&copy; 2026 AI Resume Analyzer & Career Intelligence. Built with Python, Flask, PyMuPDF & Scikit-learn.</p>
-            </div>
-        </footer>
-    </div>
-    {% endif %}
+    </footer>
 
-    <!-- Main JavaScript -->
+
+
+    <!-- ===================================================== -->
+    <!-- MAIN JAVASCRIPT -->
+    <!-- ===================================================== -->
+
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    {% block extra_js %}{% endblock %}
+
+
+    <!-- PAGE-SPECIFIC JAVASCRIPT -->
+
+    {% block extra_js %}
+    {% endblock %}
+
+
 </body>
+
 </html>

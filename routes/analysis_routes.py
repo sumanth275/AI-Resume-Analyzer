@@ -14,6 +14,7 @@ from flask import (
 )
 
 from models.analysis_model import ResumeModel, JobModel, AnalysisModel
+from models.job_portal_model import JobApplicationModel
 from services.pdf_parser import extract_text_from_pdf
 from services.job_matcher import (
     calculate_job_match,
@@ -34,9 +35,11 @@ def dashboard():
 
     resumes = ResumeModel.get_by_user(user_id)
     analyses = AnalysisModel.get_user_analyses(user_id)
+    applications = JobApplicationModel.get_user_applications(user_id)
 
     total_resumes = len(resumes)
     total_analyses = len(analyses)
+    total_applications = len(applications)
 
     avg_match_score = (
         round(
@@ -55,18 +58,19 @@ def dashboard():
         multiple_role_results = calculate_multiple_job_matches(resumes[0]['resume_text'])
 
     career_rec = get_career_recommendation(None, multiple_role_results) if multiple_role_results else None
-
     return render_template(
         'dashboard.html',
         resumes=resumes,
         analyses=analyses,
         total_resumes=total_resumes,
         total_analyses=total_analyses,
+        total_applications=total_applications,
         avg_match_score=avg_match_score,
         latest_analysis=latest_analysis,
         multiple_role_results=multiple_role_results,
         career_rec=career_rec
     )
+
 
 
 @analysis_bp.route('/analyze-page', methods=['GET'])

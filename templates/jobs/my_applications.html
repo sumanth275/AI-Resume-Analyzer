@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}My Job Applications | AI Resume Analyzer{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrapper">
+    <!-- Header -->
+    <div class="dashboard-header mb-4">
+        <div>
+            <h1><i class="fa-solid fa-clipboard-check text-primary"></i> My Job Applications</h1>
+            <p>Track the progress and status of your submitted job applications</p>
+        </div>
+        <div>
+            <a href="{{ url_for('jobs.public_jobs') }}" class="btn btn-primary">
+                <i class="fa-solid fa-magnifying-glass"></i> Browse More Jobs
+            </a>
+        </div>
+    </div>
+
+    <!-- Applications Table -->
+    <div class="card">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-size: 1.15rem;">
+                <i class="fa-solid fa-file-lines"></i> Submitted Applications
+                <span style="font-size: 0.9rem; font-weight: normal; color: var(--secondary);">({{ applications|length }})</span>
+            </h3>
+        </div>
+        <div class="card-body p-0">
+            {% if applications %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Job Title & Company</th>
+                                <th>Location</th>
+                                <th>Resume Used</th>
+                                <th>Applied Date</th>
+                                <th>Status</th>
+                                <th class="text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for app in applications %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ app.job_title }}</strong>
+                                        <div style="font-size: 0.85rem; color: var(--primary);">
+                                            <i class="fa-solid fa-building"></i> {{ app.company }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if app.location %}
+                                            <small><i class="fa-solid fa-location-dot text-muted"></i> {{ app.location }}</small>
+                                        {% else %}
+                                            <small class="text-muted">Not specified</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if app.resume_filename %}
+                                            <small><i class="fa-regular fa-file-pdf text-danger"></i> {{ app.resume_filename }}</small>
+                                        {% else %}
+                                            <small class="text-muted">Resume deleted</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ app.applied_at[:10] }}</small>
+                                    </td>
+                                    <td>
+                                        {% set st = app.status|lower %}
+                                        <span class="badge {% if st == 'accepted' or st == 'shortlisted' %}badge-success{% elif st == 'rejected' %}badge-danger{% elif st == 'reviewed' %}badge-primary{% else %}badge-warning{% endif %}" style="padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">
+                                            {{ app.status.title() }}
+                                        </span>
+                                    </td>
+                                    <td class="text-right">
+                                        <a href="{{ url_for('jobs.job_detail', listing_id=app.job_listing_id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fa-solid fa-eye"></i> View Job
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fa-solid fa-clipboard-question empty-icon"></i>
+                    <p>You have not applied for any jobs yet.</p>
+                    <a href="{{ url_for('jobs.public_jobs') }}" class="btn btn-primary">Find & Apply for Jobs</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

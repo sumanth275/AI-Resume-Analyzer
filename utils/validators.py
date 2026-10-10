@@ -24,3 +24,17 @@ def validate_password(password):
     Validates password strength (at least 6 chars).
     """
     return bool(password and len(password) >= 6)
+
+def validate_url(url):
+    """
+    Validates external HTTP / HTTPS URL format.
+    """
+    if not url or not isinstance(url, str):
+        return False
+    url = url.strip()
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        return parsed.scheme in ('http', 'https') and bool(parsed.netloc)
+    except Exception:
+        return False

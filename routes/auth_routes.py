@@ -42,6 +42,7 @@ def register():
             session['user_id'] = user_id
             session['user_name'] = name
             session['user_email'] = email
+            session['is_admin'] = False
             flash(f'Account created successfully! Welcome, {name}.', 'success')
             return redirect(url_for('analysis.dashboard'))
         except Exception as e:
@@ -68,6 +69,7 @@ def login():
             session['user_id'] = user['id']
             session['user_name'] = user['name']
             session['user_email'] = user['email']
+            session['is_admin'] = bool(user['is_admin'])
             flash(f'Welcome back, {user["name"]}!', 'success')
             
             next_page = request.args.get('next')
