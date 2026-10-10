@@ -1,98 +1,93 @@
 ```javascript
-/* ==========================================================================
-   RESULT & SCORE GAUGE ANIMATION CONTROLLER
-   ========================================================================== */
-
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Animate Hero Score Gauge & Number Count-Up
+document.addEventListener('DOMContentLoaded', function () {
+    // 1. Resume Match Score and Circular Gauge
     const scoreElement = document.getElementById('animated-score');
     const gaugeFill = document.getElementById('gaugeFill');
 
     if (scoreElement) {
-        const targetValue = parseFloat(
-            scoreElement.getAttribute('data-target')
-        ) || 0;
+        const rawScore = scoreElement.getAttribute('data-target');
+        const targetValue = Number.parseFloat(rawScore);
 
-        const circumference = 477.52;
-        const duration = 1200;
-        const steps = 50;
-        const increment = targetValue / steps;
-        const stepTime = duration / steps;
-        let currentValue = 0;
+        if (rawScore !== null && Number.isFinite(targetValue)) {
+            const score = Math.max(0, Math.min(100, targetValue));
 
-        if (gaugeFill) {
-            const strokeDashoffset =
-                circumference - (circumference * targetValue / 100);
+            // Display the actual score immediately
+            scoreElement.textContent = score.toFixed(1) + '%';
 
-            if (targetValue >= 75) {
-                gaugeFill.style.stroke = '#10b981';
-            } else if (targetValue >= 50) {
-                gaugeFill.style.stroke = '#f59e0b';
-            } else {
-                gaugeFill.style.stroke = '#ef4444';
+            const circumference = 477.52;
+
+            if (gaugeFill) {
+                // Set circle color according to score
+                if (score >= 75) {
+                    gaugeFill.style.stroke = '#10b981';
+                } else if (score >= 50) {
+                    gaugeFill.style.stroke = '#f59e0b';
+                } else {
+                    gaugeFill.style.stroke = '#ef4444';
+                }
+
+                // Animate the circular gauge
+                const offset =
+                    circumference - (circumference * score / 100);
+
+                gaugeFill.style.strokeDasharray = circumference;
+                gaugeFill.style.strokeDashoffset = circumference;
+
+                requestAnimationFrame(function () {
+                    gaugeFill.style.transition =
+                        'stroke-dashoffset 1.2s ease, stroke 0.3s ease';
+                    gaugeFill.style.strokeDashoffset = offset;
+                });
             }
-
-            setTimeout(() => {
-                gaugeFill.style.transition =
-                    `stroke-dashoffset ${duration}ms cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s ease`;
-                gaugeFill.style.strokeDashoffset = strokeDashoffset;
-            }, 60);
+        } else {
+            console.error('Invalid resume match score:', rawScore);
+            scoreElement.textContent = '—';
         }
-
-        const timer = setInterval(() => {
-            currentValue += increment;
-
-            if (currentValue >= targetValue) {
-                currentValue = targetValue;
-                clearInterval(timer);
-            }
-
-            scoreElement.textContent = currentValue.toFixed(1) + '%';
-        }, stepTime);
     }
 
-    // 2. Animate horizontal progress bars
+    // 2. Animate Horizontal Progress Bars
     const progressBars = document.querySelectorAll('.animate-progress');
 
-    progressBars.forEach(bar => {
+    progressBars.forEach(function (bar) {
         const targetWidth =
-            bar.getAttribute('data-width') || bar.style.width || '0%';
+            bar.getAttribute('data-width') ||
+            bar.style.width ||
+            '0%';
 
         bar.style.width = '0%';
 
-        setTimeout(() => {
-            bar.style.transition =
-                'width 1s cubic-bezier(0.4, 0, 0.2, 1)';
+        setTimeout(function () {
+            bar.style.transition = 'width 1s ease';
             bar.style.width = targetWidth;
         }, 120);
     });
 
-    // 3. Animate metric progress bars
+    // 3. Animate Skill and Metric Progress Bars
     const metricFills = document.querySelectorAll('.metric-progress-fill');
 
-    metricFills.forEach(fill => {
-        const targetWidth = fill.style.width;
+    metricFills.forEach(function (fill) {
+        const targetWidth = fill.style.width || '0%';
 
         fill.style.width = '0%';
 
-        setTimeout(() => {
+        setTimeout(function () {
             fill.style.transition = 'width 1s ease';
             fill.style.width = targetWidth;
         }, 150);
     });
 
-    // 4. Toggle all job matches
+    // 4. Toggle All Job Matches
     const toggleBtn = document.getElementById('toggleAllJobsBtn');
     const container = document.getElementById('allJobsContainer');
     const toggleText = document.getElementById('toggleText');
     const toggleIcon = document.getElementById('toggleIcon');
 
     if (toggleBtn && container) {
-        toggleBtn.addEventListener('click', () => {
-            if (
-                container.style.display === 'none' ||
-                !container.style.display
-            ) {
+        toggleBtn.addEventListener('click', function () {
+            const isHidden =
+                window.getComputedStyle(container).display === 'none';
+
+            if (isHidden) {
                 container.style.display = 'block';
 
                 if (toggleText) {
@@ -114,6 +109,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
+    }
+
+    // 5. Debug Information
+    console.log('Resume analysis result page loaded.');
+
+    if (scoreElement) {
+        console.log(
+            'Resume match score:',
+            scoreElement.textContent
+        );
     }
 });
 ```

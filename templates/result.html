@@ -84,13 +84,12 @@
                     score-low-border
                 {% endif %}
             ">
-
-                <span class="score-number"
-                      id="animated-score"
-                      data-target="{{ analysis.match_score }}">
-                    0%
-                </span>
-
+    <span class="score-number"
+      id="animated-score"
+      data-target="{{ analysis.match_score }}">
+    {{ "%.1f"|format(analysis.match_score|float) }}%
+     </span>
+               
             </div>
 
         </div>
