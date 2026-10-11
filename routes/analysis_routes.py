@@ -14,7 +14,7 @@ from flask import (
 )
 
 from models.analysis_model import ResumeModel, JobModel, AnalysisModel
-from models.job_portal_model import JobApplicationModel
+from models.job_portal_model import JobListingModel, JobApplicationModel
 from services.pdf_parser import extract_text_from_pdf
 from services.job_matcher import (
     calculate_job_match,
@@ -51,13 +51,43 @@ def dashboard():
     )
 
     latest_analysis = analyses[0] if analyses else None
+    
+    # Resolve resume text from latest analysis or most recent uploaded resume
+    resume_text = None
+    if latest_analysis:
+        if latest_analysis.get('resume_text'):
+            resume_text = latest_analysis['resume_text']
+        else:
+            for r in resumes:
+                r_dict = dict(r) if hasattr(r, 'keys') else r
+                if r_dict.get('id') == latest_analysis.get('resume_id') and r_dict.get('resume_text'):
+                    resume_text = r_dict['resume_text']
+                    latest_analysis['resume_text'] = resume_text
+                    break
+    if not resume_text and resumes and len(resumes) > 0:
+        first_r = dict(resumes[0]) if hasattr(resumes[0], 'keys') else resumes[0]
+        if first_r.get('resume_text'):
+            resume_text = first_r['resume_text']
+
     multiple_role_results = []
-    if latest_analysis and latest_analysis.get('resume_text'):
-        multiple_role_results = calculate_multiple_job_matches(latest_analysis['resume_text'])
-    elif resumes and len(resumes) > 0 and resumes[0].get('resume_text'):
-        multiple_role_results = calculate_multiple_job_matches(resumes[0]['resume_text'])
+    if resume_text:
+        multiple_role_results = calculate_multiple_job_matches(resume_text)
 
     career_rec = get_career_recommendation(None, multiple_role_results) if multiple_role_results else None
+
+    # Real job recommendations from JobListingModel
+    recommended_jobs = []
+    resume_skills = []
+    if resume_text:
+        from services.skill_extractor import extract_skills
+        resume_skills = extract_skills(resume_text)
+        recommended_jobs = JobListingModel.get_recommended_listings(resume_text=resume_text, limit=4)
+    else:
+        active_listings = JobListingModel.get_active_listings()
+        recommended_jobs = [dict(job) for job in active_listings[:4]]
+
+    applied_job_ids = {app['job_listing_id'] for app in applications}
+
     return render_template(
         'dashboard.html',
         resumes=resumes,
@@ -68,7 +98,10 @@ def dashboard():
         avg_match_score=avg_match_score,
         latest_analysis=latest_analysis,
         multiple_role_results=multiple_role_results,
-        career_rec=career_rec
+        career_rec=career_rec,
+        recommended_jobs=recommended_jobs,
+        applied_job_ids=applied_job_ids,
+        resume_skills=resume_skills
     )
 
 
@@ -310,6 +343,7 @@ def analyze():
 
 
 @analysis_bp.route('/result/<int:analysis_id>')
+@analysis_bp.route('/analysis/<int:analysis_id>')
 @login_required
 def result(analysis_id):
 

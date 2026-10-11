@@ -232,6 +232,23 @@ a:hover {
     text-align: center;
 }
 
+.sidebar-badge {
+    margin-left: auto;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.15rem 0.55rem;
+    border-radius: 50px;
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.sidebar-badge.admin-badge {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.4);
+}
+
 .text-danger-link {
     color: #f87171 !important;
 }
@@ -250,6 +267,32 @@ a:hover {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+}
+
+.badge-role-admin {
+    background-color: #ef4444;
+    color: #ffffff;
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: inline-block;
+    letter-spacing: 0.05em;
+}
+
+.btn-logout-mini {
+    margin-left: auto;
+    color: var(--sidebar-text);
+    font-size: 0.95rem;
+    padding: 0.35rem;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+}
+
+.btn-logout-mini:hover {
+    color: #ef4444;
+    background-color: rgba(239, 68, 68, 0.1);
 }
 
 .user-avatar {
@@ -389,12 +432,64 @@ a:hover {
     color: var(--color-green-text);
 }
 
+.topbar-brand-indicator {
+    display: flex;
+    align-items: center;
+}
+
+.topbar-page-title {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+}
+
+.topbar-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 600;
+}
+
+.topbar-user-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+}
+
+.admin-pill-tag {
+    background-color: #ef4444;
+    color: #ffffff;
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
 .app-main-body {
     flex: 1;
     padding: 2rem 2rem 3rem 2rem;
     max-width: 1600px;
     width: 100%;
     margin: 0 auto;
+}
+
+.app-footer {
+    background-color: #ffffff;
+    border-top: 1px solid var(--border-color);
+    padding: 1.25rem 2rem;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.app-footer-inner {
+    max-width: 1600px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 /* ===================================================== */

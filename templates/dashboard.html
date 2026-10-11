@@ -1,81 +1,762 @@
 {% extends "base.html" %}
 
-{% block title %}User Dashboard | AI Resume Analyzer{% endblock %}
+{% block title %}SaaS Dashboard | AI Resume Analyzer & Job Matcher{% endblock %}
 
 {% block content %}
-<div class="dashboard-wrapper">
-    <div class="dashboard-header">
-        <div>
-            <h1><i class="fa-solid fa-gauge-high text-primary"></i> Dashboard</h1>
-            <p>Overview of your uploaded resumes, job applications, and match analyses</p>
+<div class="saas-dashboard-container">
+
+    <!-- ===================================================== -->
+    <!-- 1. BLUE-PURPLE GRADIENT WELCOME BANNER & QUICK ACTIONS -->
+    <!-- ===================================================== -->
+    <section class="saas-welcome-banner">
+        <div class="banner-content">
+            <div class="banner-badge">
+                <i class="fa-solid fa-sparkles"></i>
+                <span>AI Career Intelligence & Resume Scanner</span>
+            </div>
+            <h1 class="banner-heading">
+                Welcome back, {{ session.get('user_name', 'Candidate') }}! <span class="wave-emoji">≡ƒæï</span>
+            </h1>
+            <p class="banner-subtext">
+                {% if latest_analysis %}
+                    Your latest match analysis scored <strong>{{ latest_analysis.match_score }}%</strong> for <strong>{{ latest_analysis.job_title }}</strong> using <em>{{ latest_analysis.filename }}</em>. Review your skill gaps, recommendations, and matched jobs below.
+                {% elif resumes %}
+                    You have <strong>{{ total_resumes }}</strong> resume PDF{{ 's' if total_resumes != 1 else '' }} in your vault. 
+                    {% if multiple_role_results %}
+                        Your highest role compatibility is <strong>{{ multiple_role_results[0].match_score }}%</strong> for <strong>{{ multiple_role_results[0].job_role }}</strong>.
+                    {% endif %}
+                    Run a target match analysis to score against any specific job description.
+                {% else %}
+                    Start by uploading your PDF resume to scan ATS compatibility, calculate role-match scores, and discover personalized career opportunities.
+                {% endif %}
+            </p>
+
+            <!-- Quick Action Buttons -->
+            <div class="banner-actions">
+                <a href="{{ url_for('analysis.upload_page') }}" class="btn btn-banner-primary">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>New Job Match Analysis</span>
+                </a>
+                <button type="button" class="btn btn-banner-secondary" onclick="openUploadModal()">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>Upload Resume PDF</span>
+                </button>
+                <a href="{{ url_for('jobs.public_jobs') }}" class="btn btn-banner-tertiary">
+                    <i class="fa-solid fa-briefcase"></i>
+                    <span>Explore Jobs</span>
+                </a>
+                {% if latest_analysis %}
+                <a href="{{ url_for('analysis.download_report', analysis_id=latest_analysis.id) }}" class="btn btn-banner-outline" title="Download Latest PDF Report">
+                    <i class="fa-solid fa-download"></i>
+                    <span>PDF Report</span>
+                </a>
+                {% endif %}
+            </div>
         </div>
-        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-            <a href="{{ url_for('jobs.public_jobs') }}" class="btn btn-outline-primary btn-lg">
-                <i class="fa-solid fa-briefcase"></i> Explore Jobs
-            </a>
-            <a href="{{ url_for('analysis.upload_page') }}" class="btn btn-primary btn-lg">
-                <i class="fa-solid fa-plus-circle"></i> New Job Match Analysis
-            </a>
+
+        <!-- Decorative Floating Elements -->
+        <div class="banner-decoration">
+            <div class="decoration-circle circle-1"></div>
+            <div class="decoration-circle circle-2"></div>
+            <div class="decoration-badge">
+                <i class="fa-solid fa-bolt-lightning text-warning"></i>
+                <div class="badge-info">
+                    <span class="badge-title">TF-IDF & NLP</span>
+                    <span class="badge-sub">Cosine Match Engine</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================================================== -->
+    <!-- 2. SUMMARY METRIC CARDS -->
+    <!-- ===================================================== -->
+    <section class="saas-metrics-grid">
+        <!-- Card 1: Uploaded Resumes -->
+        <div class="metric-summary-card">
+            <div class="metric-card-top">
+                <div class="metric-icon-box icon-box-blue">
+                    <i class="fa-solid fa-file-pdf"></i>
+                </div>
+                <span class="metric-trend-pill trend-neutral">
+                    <i class="fa-solid fa-folder-open"></i> Vault
+                </span>
+            </div>
+            <div class="metric-card-bottom">
+                <div class="metric-value-number">{{ total_resumes }}</div>
+                <div class="metric-label-text">Uploaded Resumes</div>
+                <div class="metric-helper-text">Stored in your secure vault</div>
+            </div>
+        </div>
+
+        <!-- Card 2: Analyses Completed -->
+        <div class="metric-summary-card">
+            <div class="metric-card-top">
+                <div class="metric-icon-box icon-box-green">
+                    <i class="fa-solid fa-chart-pie"></i>
+                </div>
+                <span class="metric-trend-pill trend-positive">
+                    <i class="fa-solid fa-check"></i> Scans
+                </span>
+            </div>
+            <div class="metric-card-bottom">
+                <div class="metric-value-number">{{ total_analyses }}</div>
+                <div class="metric-label-text">Match Analyses</div>
+                <div class="metric-helper-text">Job description evaluations</div>
+            </div>
+        </div>
+
+        <!-- Card 3: Job Applications -->
+        <div class="metric-summary-card">
+            <div class="metric-card-top">
+                <div class="metric-icon-box icon-box-purple">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                </div>
+                <span class="metric-trend-pill trend-purple">
+                    <i class="fa-solid fa-paper-plane"></i> Applied
+                </span>
+            </div>
+            <div class="metric-card-bottom">
+                <div class="metric-value-number">{{ total_applications }}</div>
+                <div class="metric-label-text">Job Applications</div>
+                <div class="metric-helper-text">Positions tracked in portal</div>
+            </div>
+        </div>
+
+        <!-- Card 4: Average Match Score -->
+        <div class="metric-summary-card">
+            <div class="metric-card-top">
+                <div class="metric-icon-box icon-box-amber">
+                    <i class="fa-solid fa-bullseye"></i>
+                </div>
+                <span class="metric-trend-pill {% if avg_match_score >= 70 %}trend-positive{% elif avg_match_score >= 40 %}trend-amber{% else %}trend-neutral{% endif %}">
+                    {% if avg_match_score >= 70 %}Strong{% elif avg_match_score >= 40 %}Moderate{% else %}Baseline{% endif %}
+                </span>
+            </div>
+            <div class="metric-card-bottom">
+                <div class="metric-value-number">{{ avg_match_score }}%</div>
+                <div class="metric-label-text">Avg Job Match Score</div>
+                <div class="metric-helper-text">Across all completed analyses</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================================================== -->
+    <!-- 3. CIRCULAR RESUME MATCH SCORE & SCORE BREAKDOWN -->
+    <!-- ===================================================== -->
+    <div class="dashboard-primary-grid">
+
+        <!-- Circular Score Card -->
+        <div class="saas-card score-gauge-card">
+            <div class="saas-card-header">
+                <div class="header-title-group">
+                    <i class="fa-solid fa-circle-notch text-primary"></i>
+                    <div>
+                        <h2 class="card-title">Resume Match Score</h2>
+                        <span class="card-subtitle">
+                            {% if latest_analysis %}
+                                Target Role: <strong>{{ latest_analysis.job_title }}</strong>
+                            {% elif multiple_role_results %}
+                                Top Career Fit: <strong>{{ multiple_role_results[0].job_role }}</strong>
+                            {% else %}
+                                Overall candidate readiness
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                {% if latest_analysis %}
+                    <span class="badge-score-pill {% if latest_analysis.match_score >= 75 %}score-pill-high{% elif latest_analysis.match_score >= 50 %}score-pill-mid{% else %}score-pill-low{% endif %}">
+                        {% if latest_analysis.match_score >= 75 %}High Compatibility{% elif latest_analysis.match_score >= 50 %}Moderate Fit{% else %}Needs Optimization{% endif %}
+                    </span>
+                {% elif multiple_role_results %}
+                    <span class="badge-score-pill {% if multiple_role_results[0].match_score >= 70 %}score-pill-high{% elif multiple_role_results[0].match_score >= 45 %}score-pill-mid{% else %}score-pill-low{% endif %}">
+                        {{ multiple_role_results[0].fit_level }}
+                    </span>
+                {% endif %}
+            </div>
+
+            <div class="saas-card-body">
+                {% if latest_analysis %}
+                    <!-- State A: Specific Job Match Analysis Available -->
+                    <div class="score-display-layout">
+                        <div class="circular-score-wrapper">
+                            {% set score = latest_analysis.match_score %}
+                            {% set circumference = 282.74 %}
+                            {% set dashoffset = circumference - (circumference * score / 100) %}
+                            
+                            <svg class="circular-chart" viewBox="0 0 100 100">
+                                <circle class="circle-bg" cx="50" cy="50" r="45"></circle>
+                                <circle class="circle-bar {% if score >= 75 %}bar-green{% elif score >= 50 %}bar-amber{% else %}bar-red{% endif %}"
+                                        cx="50" cy="50" r="45"
+                                        stroke-dasharray="282.74"
+                                        stroke-dashoffset="{{ dashoffset }}"></circle>
+                            </svg>
+                            <div class="circular-score-content">
+                                <span class="score-main-value">{{ score }}%</span>
+                                <span class="score-main-label">JOB MATCH</span>
+                            </div>
+                        </div>
+
+                        <!-- Score Breakdown Progress Bars -->
+                        <div class="score-breakdown-details">
+                            <div class="breakdown-item">
+                                <div class="breakdown-header">
+                                    <span class="breakdown-name">
+                                        <i class="fa-solid fa-code text-primary"></i> Technical Skills Match
+                                    </span>
+                                    <span class="breakdown-value">{{ latest_analysis.skills_match_score }}%</span>
+                                </div>
+                                <div class="breakdown-progress-track">
+                                    <div class="breakdown-progress-fill fill-primary" style="width: {{ latest_analysis.skills_match_score }}%;"></div>
+                                </div>
+                            </div>
+
+                            <div class="breakdown-item">
+                                <div class="breakdown-header">
+                                    <span class="breakdown-name">
+                                        <i class="fa-solid fa-tags text-purple"></i> Keyword Similarity (TF-IDF)
+                                    </span>
+                                    <span class="breakdown-value">{{ latest_analysis.keyword_match_score }}%</span>
+                                </div>
+                                <div class="breakdown-progress-track">
+                                    <div class="breakdown-progress-fill fill-purple" style="width: {{ latest_analysis.keyword_match_score }}%;"></div>
+                                </div>
+                            </div>
+
+                            <div class="breakdown-item">
+                                <div class="breakdown-header">
+                                    <span class="breakdown-name">
+                                        <i class="fa-solid fa-file-shield text-green"></i> Resume Quality & ATS Structure
+                                    </span>
+                                    <span class="breakdown-value">{{ latest_analysis.resume_score }}%</span>
+                                </div>
+                                <div class="breakdown-progress-track">
+                                    <div class="breakdown-progress-fill fill-green" style="width: {{ latest_analysis.resume_score }}%;"></div>
+                                </div>
+                            </div>
+
+                            <div class="analysis-meta-tags">
+                                <span class="meta-tag">
+                                    <i class="fa-solid fa-briefcase"></i> {{ latest_analysis.job_title }}
+                                </span>
+                                <span class="meta-tag">
+                                    <i class="fa-regular fa-file-pdf text-danger"></i> {{ latest_analysis.filename }}
+                                </span>
+                                <span class="meta-tag">
+                                    <i class="fa-regular fa-calendar"></i> {{ latest_analysis.created_at[:10] }}
+                                </span>
+                            </div>
+
+                            <div class="score-card-actions mt-3">
+                                <a href="{{ url_for('analysis.result', analysis_id=latest_analysis.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fa-solid fa-eye"></i> View Full Report
+                                </a>
+                                <a href="{{ url_for('analysis.download_report', analysis_id=latest_analysis.id) }}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="fa-solid fa-file-arrow-down"></i> Download PDF
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                {% elif multiple_role_results %}
+                    <!-- State B: Resume Uploaded, Baseline Role Fit Calculated -->
+                    <div class="score-display-layout">
+                        {% set top_role = multiple_role_results[0] %}
+                        {% set score = top_role.match_score %}
+                        {% set circumference = 282.74 %}
+                        {% set dashoffset = circumference - (circumference * score / 100) %}
+                        
+                        <div class="circular-score-wrapper">
+                            <svg class="circular-chart" viewBox="0 0 100 100">
+                                <circle class="circle-bg" cx="50" cy="50" r="45"></circle>
+                                <circle class="circle-bar {% if score >= 70 %}bar-green{% elif score >= 45 %}bar-amber{% else %}bar-red{% endif %}"
+                                        cx="50" cy="50" r="45"
+                                        stroke-dasharray="282.74"
+                                        stroke-dashoffset="{{ dashoffset }}"></circle>
+                            </svg>
+                            <div class="circular-score-content">
+                                <span class="score-main-value">{{ score }}%</span>
+                                <span class="score-main-label">ROLE FIT</span>
+                            </div>
+                        </div>
+
+                        <!-- Score Breakdown Progress Bars -->
+                        <div class="score-breakdown-details">
+                            <div class="breakdown-item">
+                                <div class="breakdown-header">
+                                    <span class="breakdown-name">
+                                        <i class="fa-solid fa-code text-primary"></i> Technical Skills Match
+                                    </span>
+                                    <span class="breakdown-value">{{ top_role.technical_skills_match_percentage }}%</span>
+                                </div>
+                                <div class="breakdown-progress-track">
+                                    <div class="breakdown-progress-fill fill-primary" style="width: {{ top_role.technical_skills_match_percentage }}%;"></div>
+                                </div>
+                            </div>
+
+                            <div class="breakdown-item">
+                                <div class="breakdown-header">
+                                    <span class="breakdown-name">
+                                        <i class="fa-solid fa-tags text-purple"></i> Role Keyword Alignment
+                                    </span>
+                                    <span class="breakdown-value">{{ top_role.keyword_match_score }}%</span>
+                                </div>
+                                <div class="breakdown-progress-track">
+                                    <div class="breakdown-progress-fill fill-purple" style="width: {{ top_role.keyword_match_score }}%;"></div>
+                                </div>
+                            </div>
+
+                            <div class="breakdown-item">
+                                <div class="breakdown-header">
+                                    <span class="breakdown-name">
+                                        <i class="fa-solid fa-file-shield text-green"></i> Resume ATS Structure
+                                    </span>
+                                    <span class="breakdown-value">{{ top_role.resume_score }}%</span>
+                                </div>
+                                <div class="breakdown-progress-track">
+                                    <div class="breakdown-progress-fill fill-green" style="width: {{ top_role.resume_score }}%;"></div>
+                                </div>
+                            </div>
+
+                            <div class="analysis-meta-tags">
+                                <span class="meta-tag">
+                                    <i class="fa-solid fa-award text-warning"></i> Best Role: {{ top_role.job_role }}
+                                </span>
+                                {% if resumes %}
+                                    <span class="meta-tag">
+                                        <i class="fa-regular fa-file-pdf text-danger"></i> {{ resumes[0].filename }}
+                                    </span>
+                                {% endif %}
+                                <span class="meta-tag">
+                                    <i class="fa-solid fa-info-circle text-primary"></i> Baseline Profile Fit
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                {% else %}
+                    <!-- State C: No Resume Uploaded Yet -->
+                    <div class="empty-score-box">
+                        <div class="circular-score-wrapper empty-gauge">
+                            <svg class="circular-chart" viewBox="0 0 100 100">
+                                <circle class="circle-bg" cx="50" cy="50" r="45"></circle>
+                            </svg>
+                            <div class="circular-score-content">
+                                <span class="score-main-value">0%</span>
+                                <span class="score-main-label">NO DATA</span>
+                            </div>
+                        </div>
+                        <div class="empty-score-message">
+                            <h3>No Resume Uploaded Yet</h3>
+                            <p>Upload your PDF resume to calculate real-time ATS match scores, detect skill gaps, and view personalized career recommendations.</p>
+                            <button type="button" class="btn btn-primary mt-2" onclick="openUploadModal()">
+                                <i class="fa-solid fa-cloud-arrow-up"></i> Upload Your First Resume
+                            </button>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Actions & Pipeline Summary Card -->
+        <div class="saas-card quick-actions-panel">
+            <div class="saas-card-header">
+                <div class="header-title-group">
+                    <i class="fa-solid fa-bolt text-warning"></i>
+                    <div>
+                        <h2 class="card-title">Quick Actions</h2>
+                        <span class="card-subtitle">Fast shortcuts for resume optimization</span>
+                    </div>
+                </div>
+            </div>
+            <div class="saas-card-body">
+                <div class="action-tiles-grid">
+                    <a href="{{ url_for('analysis.upload_page') }}" class="action-tile tile-blue">
+                        <div class="tile-icon-wrap">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        </div>
+                        <div class="tile-text-wrap">
+                            <span class="tile-title">Scan Job Match</span>
+                            <span class="tile-desc">Compare resume with JD</span>
+                        </div>
+                        <i class="fa-solid fa-arrow-right tile-arrow"></i>
+                    </a>
+
+                    <a href="javascript:void(0)" onclick="openUploadModal()" class="action-tile tile-purple">
+                        <div class="tile-icon-wrap">
+                            <i class="fa-solid fa-file-arrow-up"></i>
+                        </div>
+                        <div class="tile-text-wrap">
+                            <span class="tile-title">Upload New Resume</span>
+                            <span class="tile-desc">Add PDF to your vault</span>
+                        </div>
+                        <i class="fa-solid fa-arrow-right tile-arrow"></i>
+                    </a>
+
+                    <a href="{{ url_for('jobs.public_jobs') }}" class="action-tile tile-teal">
+                        <div class="tile-icon-wrap">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </div>
+                        <div class="tile-text-wrap">
+                            <span class="tile-title">Browse Job Portal</span>
+                            <span class="tile-desc">Search active opportunities</span>
+                        </div>
+                        <i class="fa-solid fa-arrow-right tile-arrow"></i>
+                    </a>
+
+                    <a href="{{ url_for('jobs.my_applications') }}" class="action-tile tile-amber">
+                        <div class="tile-icon-wrap">
+                            <i class="fa-solid fa-clipboard-list"></i>
+                        </div>
+                        <div class="tile-text-wrap">
+                            <span class="tile-title">Application Status</span>
+                            <span class="tile-desc">Track submitted roles</span>
+                        </div>
+                        <i class="fa-solid fa-arrow-right tile-arrow"></i>
+                    </a>
+                </div>
+
+                <!-- Pro Tips / Highlights -->
+                <div class="dashboard-tip-banner mt-3">
+                    <i class="fa-solid fa-lightbulb tip-icon"></i>
+                    <div class="tip-content">
+                        <strong>Pro Tip:</strong> Tailor your resume keywords to the target job description to optimize TF-IDF Cosine Similarity and ATS rank.
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Stats Summary Row -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-icon bg-indigo-light">
-                <i class="fa-solid fa-file-pdf"></i>
+    <!-- ===================================================== -->
+    <!-- 4. SKILL ANALYSIS & ROLE FIT SECTION -->
+    <!-- ===================================================== -->
+    <div class="dashboard-two-column-grid mt-4">
+
+        <!-- Skills Overview Card -->
+        <div class="saas-card">
+            <div class="saas-card-header">
+                <div class="header-title-group">
+                    <i class="fa-solid fa-layer-group text-primary"></i>
+                    <div>
+                        <h2 class="card-title">Skill Analysis</h2>
+                        <span class="card-subtitle">
+                            {% if latest_analysis %}
+                                Extracted matching skills and detected gaps for {{ latest_analysis.job_title }}
+                            {% elif resume_skills %}
+                                Skills identified from your uploaded resume
+                            {% else %}
+                                Extracted matching skills and detected gaps
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
             </div>
-            <div class="stat-info">
-                <span class="stat-value">{{ total_resumes }}</span>
-                <span class="stat-label">Uploaded Resumes</span>
+
+            <div class="saas-card-body">
+                {% if latest_analysis %}
+                    <!-- Matching Skills Group from Job Analysis -->
+                    <div class="skills-block mb-4">
+                        <div class="skills-block-header">
+                            <span class="skills-category-badge badge-matched">
+                                <i class="fa-solid fa-circle-check"></i> Matching Skills ({{ latest_analysis.matching_skills|length }})
+                            </span>
+                            <span class="text-muted text-xs">Identified in your resume</span>
+                        </div>
+                        {% if latest_analysis.matching_skills %}
+                            <div class="skill-chips-wrap">
+                                {% for skill in latest_analysis.matching_skills %}
+                                    <span class="skill-chip chip-green">
+                                        <i class="fa-solid fa-check"></i> {{ skill }}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted text-sm mt-2">No direct skill matches detected for this job description.</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="section-divider"></div>
+
+                    <!-- Missing Skills / Skills to Develop -->
+                    <div class="skills-block">
+                        <div class="skills-block-header">
+                            <span class="skills-category-badge badge-missing">
+                                <i class="fa-solid fa-triangle-exclamation"></i> Skills to Improve / Missing ({{ latest_analysis.missing_skills|length }})
+                            </span>
+                            <span class="text-muted text-xs">Required in target JD</span>
+                        </div>
+                        {% if latest_analysis.missing_skills %}
+                            <div class="skill-chips-wrap">
+                                {% for skill in latest_analysis.missing_skills %}
+                                    <span class="skill-chip chip-amber">
+                                        <i class="fa-solid fa-plus"></i> {{ skill }}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-success text-sm mt-2">
+                                <i class="fa-solid fa-circle-check"></i> Great job! No critical skills missing for this role.
+                            </p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Strategic Recommendations -->
+                    {% if latest_analysis.recommendations %}
+                        <div class="section-divider"></div>
+                        <div class="recommendations-block">
+                            <h4 class="rec-title"><i class="fa-solid fa-compass text-primary"></i> Key Action Recommendations:</h4>
+                            <ul class="rec-list">
+                                {% for rec in latest_analysis.recommendations[:3] %}
+                                    <li class="rec-item">
+                                        <i class="fa-solid fa-arrow-right-long text-primary"></i>
+                                        <span>{{ rec }}</span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
+                {% elif resume_skills %}
+                    <!-- Skills Directly from Uploaded Resume -->
+                    <div class="skills-block mb-4">
+                        <div class="skills-block-header">
+                            <span class="skills-category-badge badge-matched">
+                                <i class="fa-solid fa-circle-check"></i> Resume Skills Identified ({{ resume_skills|length }})
+                            </span>
+                            <span class="text-muted text-xs">Detected by NLP parser</span>
+                        </div>
+                        <div class="skill-chips-wrap">
+                            {% for skill in resume_skills %}
+                                <span class="skill-chip chip-green">
+                                    <i class="fa-solid fa-check"></i> {{ skill }}
+                                </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {% if multiple_role_results and multiple_role_results[0].skills_to_improve %}
+                        <div class="section-divider"></div>
+                        <div class="skills-block">
+                            <div class="skills-block-header">
+                                <span class="skills-category-badge badge-missing">
+                                    <i class="fa-solid fa-arrow-trend-up"></i> Recommended Skills to Learn (for {{ multiple_role_results[0].job_role }})
+                                </span>
+                                <span class="text-muted text-xs">Priority additions</span>
+                            </div>
+                            <div class="skill-chips-wrap">
+                                {% for skill in multiple_role_results[0].skills_to_improve[:8] %}
+                                    <span class="skill-chip chip-amber">
+                                        <i class="fa-solid fa-plus"></i> {{ skill }}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if career_rec and career_rec.next_best_action %}
+                        <div class="section-divider"></div>
+                        <div class="recommendations-block">
+                            <h4 class="rec-title"><i class="fa-solid fa-compass text-primary"></i> Career Recommendation:</h4>
+                            <p class="text-sm text-secondary mt-1">{{ career_rec.next_best_action.action_text }}</p>
+                            <p class="text-xs text-muted">{{ career_rec.next_best_action.recommendation }}</p>
+                        </div>
+                    {% endif %}
+
+                {% else %}
+                    <div class="empty-state-box">
+                        <i class="fa-solid fa-chart-column empty-icon text-muted"></i>
+                        <p class="text-muted">No skill data available yet. Upload a resume to automatically extract skills and view gap analysis.</p>
+                        <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="openUploadModal()">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Upload Resume
+                        </button>
+                    </div>
+                {% endif %}
             </div>
         </div>
 
-        <div class="stat-card">
-            <div class="stat-icon bg-emerald-light">
-                <i class="fa-solid fa-chart-pie"></i>
+        <!-- Predefined Tech Roles Matching & Career Fit -->
+        <div class="saas-card">
+            <div class="saas-card-header">
+                <div class="header-title-group">
+                    <i class="fa-solid fa-bullseye text-purple"></i>
+                    <div>
+                        <h2 class="card-title">Top Role Compatibility</h2>
+                        <span class="card-subtitle">Compatibility across tech industry career paths</span>
+                    </div>
+                </div>
+                <a href="{{ url_for('jobs.public_jobs') }}" class="view-all-link">
+                    Explore Roles <i class="fa-solid fa-arrow-right"></i>
+                </a>
             </div>
-            <div class="stat-info">
-                <span class="stat-value">{{ total_analyses }}</span>
-                <span class="stat-label">Analyses Completed</span>
+
+            <div class="saas-card-body">
+                {% if multiple_role_results %}
+                    <div class="role-matches-list">
+                        {% for role in multiple_role_results[:4] %}
+                            <div class="role-match-card">
+                                <div class="role-card-top">
+                                    <div class="role-meta">
+                                        <span class="role-name-text">{{ role.job_role }}</span>
+                                        <span class="role-fit-badge {% if role.match_score >= 70 %}fit-high{% elif role.match_score >= 45 %}fit-mid{% else %}fit-low{% endif %}">
+                                            {{ role.fit_level }}
+                                        </span>
+                                    </div>
+                                    <span class="role-score-percent">{{ role.match_score }}%</span>
+                                </div>
+
+                                <div class="role-progress-bar">
+                                    <div class="role-progress-fill {% if role.match_score >= 70 %}fill-green{% elif role.match_score >= 45 %}fill-amber{% else %}fill-red{% endif %}"
+                                         style="width: {{ role.match_score }}%;"></div>
+                                </div>
+
+                                <div class="role-skill-summary">
+                                    <span class="text-muted text-xs">
+                                        Skills Match: <strong>{{ role.technical_skills_match_percentage }}%</strong>
+                                    </span>
+                                    <span class="text-muted text-xs">
+                                        {{ role.matching_skills|length }} matching / {{ role.missing_skills|length }} missing
+                                    </span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state-box">
+                        <i class="fa-solid fa-user-astronaut empty-icon text-muted"></i>
+                        <p class="text-muted">Upload a resume to automatically calculate fit against 20 predefined engineering and data roles.</p>
+                        <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="openUploadModal()">
+                            Upload Resume
+                        </button>
+                    </div>
+                {% endif %}
             </div>
         </div>
 
-        <div class="stat-card">
-            <div class="stat-icon bg-indigo-light" style="color: var(--primary);">
-                <i class="fa-solid fa-clipboard-check"></i>
-            </div>
-            <div class="stat-info">
-                <span class="stat-value">{{ total_applications }}</span>
-                <span class="stat-label">Applications Submitted</span>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon bg-purple-light">
-                <i class="fa-solid fa-bullseye"></i>
-            </div>
-            <div class="stat-info">
-                <span class="stat-value">{{ avg_match_score }}%</span>
-                <span class="stat-label">Avg Job Match Score</span>
-            </div>
-        </div>
     </div>
 
-    <!-- Main Content Columns -->
-    <div class="dashboard-grid">
-        <!-- Analyses History Table -->
-        <div class="card grid-span-2">
-            <div class="card-header">
-                <h3><i class="fa-solid fa-history"></i> Recent Match Analyses</h3>
+    <!-- ===================================================== -->
+    <!-- 5. REAL JOB RECOMMENDATIONS SECTION -->
+    <!-- ===================================================== -->
+    <section class="saas-card mt-4">
+        <div class="saas-card-header">
+            <div class="header-title-group">
+                <i class="fa-solid fa-briefcase text-primary"></i>
+                <div>
+                    <h2 class="card-title">Job Recommendations</h2>
+                    <span class="card-subtitle">Curated opportunities matched with your resume skill profile</span>
+                </div>
             </div>
-            <div class="card-body p-0">
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <a href="{{ url_for('jobs.recommendations') }}" class="btn btn-sm btn-outline-primary">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> AI Recommendations
+                </a>
+                <a href="{{ url_for('jobs.public_jobs') }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fa-solid fa-list"></i> All Openings
+                </a>
+            </div>
+        </div>
+
+        <div class="saas-card-body">
+            {% if recommended_jobs %}
+                <div class="recommended-jobs-grid">
+                    {% for job in recommended_jobs %}
+                        <div class="job-recommendation-card">
+                            <div class="job-card-header">
+                                <div class="job-header-text">
+                                    <h3 class="job-title-link">
+                                        <a href="{{ url_for('jobs.job_detail', listing_id=job.id) }}">{{ job.title }}</a>
+                                    </h3>
+                                    <div class="job-company-row">
+                                        <i class="fa-regular fa-building text-muted"></i>
+                                        <span class="job-company-name">{{ job.company }}</span>
+                                        {% if job.location %}
+                                            <span class="job-location-dot">ΓÇó</span>
+                                            <span class="job-location-text"><i class="fa-solid fa-location-dot"></i> {{ job.location }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                {% if job.match_score is defined and job.match_score is not none %}
+                                    <span class="job-match-badge {% if job.match_score >= 70 %}badge-high{% elif job.match_score >= 40 %}badge-mid{% else %}badge-neutral{% endif %}">
+                                        {{ job.match_score }}% Match
+                                    </span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Skills Chips -->
+                            <div class="job-skills-preview">
+                                {% if job.required_skills %}
+                                    {% for s in job.required_skills.split(',')[:4] %}
+                                        {% if s.strip() %}
+                                            <span class="job-mini-tag">{{ s.strip() }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="job-mini-tag text-muted">Tech Stack Required</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="job-card-footer">
+                                <div class="job-app-type">
+                                    <span class="badge-type-pill">
+                                        <i class="fa-solid {% if job.application_type == 'external' %}fa-arrow-up-right-from-square{% else %}fa-bolt{% endif %}"></i>
+                                        {{ job.application_type|title }} Application
+                                    </span>
+                                </div>
+
+                                <div class="job-action-btn">
+                                    {% if job.id in applied_job_ids %}
+                                        <span class="btn-applied-status">
+                                            <i class="fa-solid fa-circle-check text-success"></i> Applied
+                                        </span>
+                                    {% else %}
+                                        <a href="{{ url_for('jobs.job_detail', listing_id=job.id) }}" class="btn btn-sm btn-primary">
+                                            View & Apply <i class="fa-solid fa-arrow-right"></i>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state-box">
+                    <i class="fa-solid fa-briefcase empty-icon text-muted"></i>
+                    <p class="text-muted">No job recommendations available yet. Browse active opportunities or post new openings.</p>
+                    <a href="{{ url_for('jobs.public_jobs') }}" class="btn btn-primary btn-sm mt-2">
+                        Explore Openings
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- ===================================================== -->
+    <!-- 6. RECENT RESUME ANALYSES & UPLOADED RESUMES GRID -->
+    <!-- ===================================================== -->
+    <div class="dashboard-secondary-grid mt-4">
+
+        <!-- Recent Analyses Table -->
+        <div class="saas-card analyses-table-card">
+            <div class="saas-card-header">
+                <div class="header-title-group">
+                    <i class="fa-solid fa-clock-rotate-left text-primary"></i>
+                    <div>
+                        <h2 class="card-title">Recent Resume Analyses</h2>
+                        <span class="card-subtitle">History of previous role evaluations</span>
+                    </div>
+                </div>
+                <span class="badge-count-pill">{{ analyses|length }} Total</span>
+            </div>
+
+            <div class="saas-card-body p-0">
                 {% if analyses %}
                     <div class="table-responsive">
-                        <table class="table">
+                        <table class="saas-table">
                             <thead>
                                 <tr>
-                                    <th>Job Role</th>
+                                    <th>Target Job Role</th>
                                     <th>Resume File</th>
                                     <th>Match Score</th>
                                     <th>Date</th>
@@ -85,24 +766,31 @@
                             <tbody>
                                 {% for item in analyses %}
                                 <tr>
-                                    <td><strong>{{ item.job_title }}</strong></td>
-                                    <td><i class="fa-regular fa-file-pdf text-danger"></i> {{ item.filename }}</td>
+                                    <td class="font-semibold text-primary-dark">
+                                        <strong>{{ item.job_title }}</strong>
+                                    </td>
                                     <td>
-                                        <span class="score-badge {% if item.match_score >= 75 %}score-high{% elif item.match_score >= 50 %}score-mid{% else %}score-low{% endif %}">
+                                        <span class="file-name-cell">
+                                            <i class="fa-regular fa-file-pdf text-danger"></i>
+                                            <span>{{ item.filename }}</span>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="score-badge-cell {% if item.match_score >= 75 %}score-high{% elif item.match_score >= 50 %}score-mid{% else %}score-low{% endif %}">
                                             {{ item.match_score }}%
                                         </span>
                                     </td>
-                                    <td><small class="text-muted">{{ item.created_at[:10] }}</small></td>
-                                    <td class="text-right action-cells">
-                                        <a href="{{ url_for('analysis.result', analysis_id=item.id) }}" class="btn btn-sm btn-outline-primary" title="View Results">
+                                    <td class="text-muted text-sm">{{ item.created_at[:10] }}</td>
+                                    <td class="text-right action-buttons-cell">
+                                        <a href="{{ url_for('analysis.result', analysis_id=item.id) }}" class="btn btn-xs btn-outline-primary" title="View Full Analysis">
                                             <i class="fa-solid fa-eye"></i> View
                                         </a>
-                                        <a href="{{ url_for('analysis.download_report', analysis_id=item.id) }}" class="btn btn-sm btn-outline-secondary" title="Download Report">
+                                        <a href="{{ url_for('analysis.download_report', analysis_id=item.id) }}" class="btn btn-xs btn-outline-secondary" title="Download PDF Report">
                                             <i class="fa-solid fa-download"></i> PDF
                                         </a>
-                                        <form action="{{ url_for('analysis.delete_analysis', analysis_id=item.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this analysis report?');">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
-                                                <i class="fa-solid fa-trash"></i>
+                                        <form action="{{ url_for('analysis.delete_analysis', analysis_id=item.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this analysis record?');">
+                                            <button type="submit" class="btn btn-xs btn-outline-danger" title="Delete record">
+                                                <i class="fa-solid fa-trash-can"></i>
                                             </button>
                                         </form>
                                     </td>
@@ -112,38 +800,50 @@
                         </table>
                     </div>
                 {% else %}
-                    <div class="empty-state">
-                        <i class="fa-solid fa-magnifying-glass-chart empty-icon"></i>
-                        <p>No analyses performed yet.</p>
-                        <a href="{{ url_for('analysis.upload_page') }}" class="btn btn-primary">Start Your First Match Analysis</a>
+                    <div class="empty-state-box">
+                        <i class="fa-solid fa-magnifying-glass-chart empty-icon text-muted"></i>
+                        <p class="text-muted">No resume match analyses found yet.</p>
+                        <a href="{{ url_for('analysis.upload_page') }}" class="btn btn-primary btn-sm mt-2">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Run Your First Analysis
+                        </a>
                     </div>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Uploaded Resumes Sidebar -->
-        <div class="card">
-            <div class="card-header">
-                <h3><i class="fa-solid fa-folder-open"></i> Uploaded Resumes</h3>
+        <!-- Uploaded Resumes Card -->
+        <div class="saas-card uploaded-resumes-card">
+            <div class="saas-card-header">
+                <div class="header-title-group">
+                    <i class="fa-solid fa-folder-open text-primary"></i>
+                    <div>
+                        <h2 class="card-title">Uploaded Resumes</h2>
+                        <span class="card-subtitle">Active documents in your vault</span>
+                    </div>
+                </div>
+                <span class="badge-count-pill">{{ resumes|length }} Stored</span>
             </div>
-            <div class="card-body">
+
+            <div class="saas-card-body">
                 {% if resumes %}
-                    <ul class="resume-list">
+                    <ul class="saved-resumes-list">
                         {% for r in resumes %}
-                            <li class="resume-item">
-                                <div class="resume-file-info">
-                                    <i class="fa-solid fa-file-pdf text-danger fa-lg"></i>
-                                    <div>
-                                        <div class="resume-filename">{{ r.filename }}</div>
+                            <li class="saved-resume-row">
+                                <div class="resume-meta-box">
+                                    <div class="resume-icon-badge">
+                                        <i class="fa-solid fa-file-pdf"></i>
+                                    </div>
+                                    <div class="resume-info-text">
+                                        <div class="resume-filename-text" title="{{ r.filename }}">{{ r.filename }}</div>
                                         <small class="text-muted">Uploaded {{ r.uploaded_at[:10] }}</small>
                                     </div>
                                 </div>
-                                <div class="resume-actions">
-                                    <a href="{{ url_for('analysis.upload_page', selected_resume=r.id) }}" class="btn-icon text-primary" title="Analyze with Job">
+                                <div class="resume-row-actions">
+                                    <a href="{{ url_for('analysis.upload_page', selected_resume=r.id) }}" class="btn-icon-action btn-scan" title="Scan with a Job Description">
                                         <i class="fa-solid fa-wand-magic-sparkles"></i>
                                     </a>
-                                    <form action="{{ url_for('resume.delete_resume', resume_id=r.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Delete this resume?');">
-                                        <button type="submit" class="btn-icon text-danger" title="Delete Resume">
+                                    <form action="{{ url_for('resume.delete_resume', resume_id=r.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Delete this resume from your vault?');">
+                                        <button type="submit" class="btn-icon-action btn-delete" title="Delete Resume">
                                             <i class="fa-solid fa-trash-can"></i>
                                         </button>
                                     </form>
@@ -152,19 +852,114 @@
                         {% endfor %}
                     </ul>
                 {% else %}
-                    <div class="empty-state compact">
-                        <i class="fa-solid fa-file-arrow-up empty-icon-sm"></i>
-                        <p>No resumes saved.</p>
+                    <div class="empty-state-box">
+                        <i class="fa-solid fa-file-arrow-up empty-icon text-muted"></i>
+                        <p class="text-muted">No resume files uploaded yet.</p>
                     </div>
                 {% endif %}
 
-                <div class="mt-3">
-                    <a href="{{ url_for('analysis.upload_page') }}" class="btn btn-outline-primary btn-block">
+                <div class="upload-cta-wrap mt-3">
+                    <button type="button" class="btn btn-outline-primary btn-block" onclick="openUploadModal()">
                         <i class="fa-solid fa-upload"></i> Upload New Resume PDF
-                    </a>
+                    </button>
                 </div>
             </div>
         </div>
+
+    </div>
+
+</div>
+
+<!-- ===================================================== -->
+<!-- MODAL: QUICK RESUME UPLOAD TO VAULT -->
+<!-- ===================================================== -->
+<div id="uploadResumeModal" class="saas-modal-backdrop" style="display: none;">
+    <div class="saas-modal-dialog">
+        <div class="saas-modal-header">
+            <div class="modal-header-text">
+                <h3 class="modal-title"><i class="fa-solid fa-cloud-arrow-up text-primary"></i> Upload Resume PDF</h3>
+                <span class="modal-subtitle">Save a PDF document to your vault for instant job matching</span>
+            </div>
+            <button type="button" class="modal-close-btn" onclick="closeUploadModal()">&times;</button>
+        </div>
+
+        <form action="{{ url_for('resume.upload') }}" method="POST" enctype="multipart/form-data" id="quickUploadForm">
+            <input type="hidden" name="next" value="{{ url_for('analysis.dashboard') }}">
+            <div class="saas-modal-body">
+                <div class="modal-drop-zone" id="modalDropZone" onclick="document.getElementById('quick_resume_input').click()">
+                    <i class="fa-solid fa-file-pdf modal-drop-icon"></i>
+                    <h4 class="drop-zone-title">Click to select PDF resume</h4>
+                    <p class="drop-zone-sub">or drag and drop here (PDF up to 16MB)</p>
+                    <input type="file" name="resume" id="quick_resume_input" accept=".pdf" required style="display: none;" onchange="handleModalFileSelect(this)">
+                </div>
+
+                <div id="modalSelectedFile" class="modal-file-preview" style="display: none;">
+                    <i class="fa-solid fa-circle-check text-success"></i>
+                    <div class="file-preview-info">
+                        <strong id="modalFileName">resume.pdf</strong>
+                        <small id="modalFileSize" class="text-muted">PDF Document</small>
+                    </div>
+                    <button type="button" class="btn-clear-modal-file" onclick="clearModalFile()">&times;</button>
+                </div>
+            </div>
+
+            <div class="saas-modal-footer">
+                <button type="button" class="btn btn-outline-secondary" onclick="closeUploadModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="btnModalUpload">
+                    <i class="fa-solid fa-upload"></i> Upload & Save to Vault
+                </button>
+            </div>
+        </form>
     </div>
 </div>
+
+<script>
+function openUploadModal() {
+    const modal = document.getElementById('uploadResumeModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeUploadModal() {
+    const modal = document.getElementById('uploadResumeModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+
+function handleModalFileSelect(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        document.getElementById('modalFileName').textContent = file.name;
+        document.getElementById('modalFileSize').textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+        document.getElementById('modalSelectedFile').style.display = 'flex';
+        document.getElementById('modalDropZone').style.borderColor = 'var(--primary)';
+    }
+}
+
+function clearModalFile() {
+    const input = document.getElementById('quick_resume_input');
+    if (input) input.value = '';
+    document.getElementById('modalSelectedFile').style.display = 'none';
+    document.getElementById('modalDropZone').style.borderColor = 'var(--border-color)';
+}
+
+// Close modal when clicking backdrop
+window.addEventListener('click', function(e) {
+    const modal = document.getElementById('uploadResumeModal');
+    if (e.target === modal) {
+        closeUploadModal();
+    }
+});
+
+// ESC key closes modal
+window.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeUploadModal();
+    }
+});
+</script>
 {% endblock %}
