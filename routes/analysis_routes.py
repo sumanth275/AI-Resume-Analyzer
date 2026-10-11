@@ -50,7 +50,7 @@ def dashboard():
         else 0.0
     )
 
-    latest_analysis = analyses[0] if analyses else None
+    latest_analysis = (dict(analyses[0]) if hasattr(analyses[0], 'keys') else analyses[0]) if analyses else None
     
     # Resolve resume text from latest analysis or most recent uploaded resume
     resume_text = None
