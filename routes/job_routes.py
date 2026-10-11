@@ -22,7 +22,7 @@ job_bp = Blueprint('jobs', __name__)
 
 @job_bp.route('/', methods=['GET'])
 def public_jobs():
-    search = request.args.get('search', '').strip()
+    search = (request.args.get('search') or request.args.get('q') or '').strip()
     location = request.args.get('location', '').strip()
 
     listings = JobListingModel.get_active_listings(search=search, location=location)

@@ -16,14 +16,10 @@ def upload():
     user_id = session['user_id']
     
     if request.method == 'POST':
-        if 'resume' not in request.files:
-            flash('No file selected.', 'danger')
-            return redirect(request.url)
-            
-        file = request.files['resume']
-        if file.filename == '':
-            flash('No file selected.', 'danger')
-            return redirect(request.url)
+        file = request.files.get('resume') or request.files.get('resume_file')
+        if not file or file.filename == '':
+            flash('No file selected for upload.', 'danger')
+            return redirect(request.form.get('next') or request.referrer or request.url)
 
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
@@ -52,7 +48,13 @@ def upload():
                         'filename': filename,
                         'message': 'Resume uploaded successfully'
                     })
-                    
+                
+                next_url = request.form.get('next') or request.args.get('next')
+                if next_url:
+                    return redirect(next_url)
+                if request.referrer and 'dashboard' in request.referrer:
+                    return redirect(url_for('analysis.dashboard'))
+
                 return redirect(url_for('analysis.upload_page', selected_resume=resume_id))
 
             except sqlite3.IntegrityError:
@@ -82,6 +84,7 @@ def upload():
 
 
 @resume_bp.route('/delete-resume/<int:resume_id>', methods=['POST'])
+@resume_bp.route('/delete/<int:resume_id>', methods=['POST'])
 @login_required
 def delete_resume(resume_id):
     user_id = session['user_id']
