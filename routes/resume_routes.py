@@ -49,6 +49,7 @@ def upload():
                         'message': 'Resume uploaded successfully'
                     })
 
+
                 next_url = request.form.get('next') or request.args.get('next')
                 if next_url:
                     return redirect(next_url)
