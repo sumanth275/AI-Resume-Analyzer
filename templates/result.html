@@ -458,6 +458,55 @@
 
 
     <!-- ===================================================== -->
+    <!-- STRONGEST SKILL & JOB RECOMMENDATION (BASED ON STRONGEST SKILL) -->
+    <!-- ===================================================== -->
+    {% if strongest_rec and strongest_rec.strongest_skill %}
+    <div class="card mt-4" style="border: 2px solid #4f46e5; background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%); box-shadow: 0 4px 16px rgba(79, 70, 229, 0.08);">
+        <div class="card-body" style="padding: 1.75rem;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.25rem;">
+                <div style="flex: 1; min-width: 300px;">
+                    <span style="background: #4f46e5; color: #fff; font-size: 0.78rem; font-weight: 700; padding: 0.35rem 0.85rem; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <i class="fa-solid fa-star text-warning"></i> Strongest Skill Recommendation
+                    </span>
+                    <h2 style="font-size: 1.45rem; color: #0f172a; margin: 0.75rem 0 0.35rem 0;">
+                        Candidate Strongest Skill: <span style="color: #4f46e5; font-weight: 800;">{{ strongest_rec.strongest_skill }}</span>
+                    </h2>
+                    <p style="color: #334155; font-size: 1rem; margin-bottom: 0.5rem;">
+                        <strong>Recommended Job based on your strongest skill:</strong>
+                        <span style="font-size: 1.15rem; color: #0f172a; font-weight: 700;">{{ strongest_rec.recommended_role }}</span>
+                        <span class="score-badge score-high" style="margin-left: 0.5rem; font-size: 0.85rem; vertical-align: middle;">{{ strongest_rec.match_percentage }}% Match</span>
+                    </p>
+                    <p style="color: #64748b; font-size: 0.92rem; margin-bottom: 0.85rem;">
+                        <i class="fa-solid fa-circle-check text-success"></i> {{ strongest_rec.reason }}
+                    </p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center;">
+                        <small style="font-weight: 700; color: #16a34a;">Matching Skills:</small>
+                        {% for s in strongest_rec.matched_skills[:6] %}
+                            <span class="skill-pill pill-matching" style="font-size: 0.75rem; padding: 0.2rem 0.55rem;"><i class="fa-solid fa-check"></i> {{ s }}</span>
+                        {% endfor %}
+                        {% if strongest_rec.missing_skills %}
+                            <small style="font-weight: 700; color: #e11d48; margin-left: 0.5rem;">Skills to Learn:</small>
+                            {% for s in strongest_rec.missing_skills[:3] %}
+                                <span class="skill-pill pill-missing" style="font-size: 0.75rem; padding: 0.2rem 0.55rem;"><i class="fa-solid fa-plus"></i> {{ s }}</span>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.6rem; align-self: center;">
+                    <a href="{{ url_for('jobs.public_jobs', search=strongest_rec.recommended_role) }}" class="btn btn-primary btn-lg" style="white-space: nowrap;">
+                        <i class="fa-solid fa-paper-plane"></i> Apply for {{ strongest_rec.recommended_role }} Jobs
+                    </a>
+                    <a href="{{ url_for('jobs.recommendations') }}" class="btn btn-outline-primary" style="white-space: nowrap;">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> View All Recommended Openings
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+
+    <!-- ===================================================== -->
     <!-- SECTION 2: TOP 20 SUITABLE ROLES -->
     <!-- ===================================================== -->
 
@@ -494,6 +543,7 @@
                             <th>Keyword Similarity</th>
                             <th>Overall Match</th>
                             <th>Matching Skills</th>
+                            <th class="text-right">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -518,6 +568,11 @@
                                 {% else %}
                                     <small class="text-muted">None</small>
                                 {% endif %}
+                            </td>
+                            <td class="text-right">
+                                <a href="{{ url_for('jobs.public_jobs', search=role.job_role) }}" class="btn btn-xs btn-primary" title="View & Apply to {{ role.job_role }} Jobs">
+                                    <i class="fa-solid fa-paper-plane"></i> Apply
+                                </a>
                             </td>
                         </tr>
                         {% endfor %}
@@ -628,8 +683,17 @@
                                 <li>{{ skill }}</li>
                             {% endfor %}
                         </ol>
-                    </div>
                     {% endif %}
+
+                    <!-- ACTION BUTTON TO APPLY (FOR ALL ROLES) -->
+                    <div class="mt-4 pt-3" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color, #e2e8f0); flex-wrap: wrap; gap: 0.75rem;">
+                        <span class="text-muted" style="font-size: 0.88rem;">
+                            <i class="fa-solid fa-briefcase text-primary"></i> Ready to pursue this career path?
+                        </span>
+                        <a href="{{ url_for('jobs.public_jobs', search=role.job_role) }}" class="btn btn-sm btn-primary">
+                            <i class="fa-solid fa-paper-plane"></i> Apply for {{ role.job_role }} Jobs <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                    </div>
 
                 </div>
 
@@ -643,6 +707,370 @@
 
     {% endif %}
 
+
+    <!-- ===================================================== -->
+    <!-- SECTION 3: RECOMMENDED JOBS NEAR BANGALORE & HYDERABAD -->
+    <!-- ===================================================== -->
+    <div class="card mt-4" style="border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h3 style="margin: 0; font-size: 1.25rem;">
+                    <i class="fa-solid fa-location-dot text-danger"></i>
+                    RECOMMENDED JOBS NEAR BANGALORE & HYDERABAD
+                </h3>
+                <p class="text-muted mb-0" style="font-size: 0.9rem;">
+                    Active openings in India's premier tech hubs matching your resume profile.
+                </p>
+            </div>
+            <!-- City filter buttons -->
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button type="button" class="btn btn-sm btn-primary hub-tab-btn active" id="hub-tab-all" onclick="filterHubJobs('all')" style="border-radius: 999px; padding: 0.35rem 0.85rem; font-size: 0.82rem;">
+                    All Tech Hubs ({{ near_hub_jobs|length }})
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary hub-tab-btn" id="hub-tab-bangalore" onclick="filterHubJobs('bangalore')" style="border-radius: 999px; padding: 0.35rem 0.85rem; font-size: 0.82rem;">
+                    <i class="fa-solid fa-building text-primary"></i> Bangalore / Bengaluru ({{ bangalore_jobs|length }})
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary hub-tab-btn" id="hub-tab-hyderabad" onclick="filterHubJobs('hyderabad')" style="border-radius: 999px; padding: 0.35rem 0.85rem; font-size: 0.82rem;">
+                    <i class="fa-solid fa-city text-primary"></i> Hyderabad ({{ hyderabad_jobs|length }})
+                </button>
+            </div>
+        </div>
+
+        <div class="card-body">
+            {% if near_hub_jobs %}
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.25rem;">
+                    {% for job in near_hub_jobs %}
+                        <div class="card hub-job-card" data-city="{% if 'hyderabad' in (job.location|lower) %}hyderabad{% else %}bangalore{% endif %}" style="margin: 0; border: 1px solid var(--border-color); display: flex; flex-direction: column; justify-content: space-between; border-radius: 8px; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-md)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)';">
+                            <div class="card-body" style="padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                        <div>
+                                            <h4 style="font-size: 1.1rem; margin: 0 0 0.2rem 0; color: #0f172a;">{{ job.title }}</h4>
+                                            <span style="font-weight: 600; color: var(--primary); font-size: 0.92rem;">
+                                                <i class="fa-solid fa-building"></i> {{ job.company }}
+                                            </span>
+                                        </div>
+                                        <span class="score-badge {% if job.match_score >= 70 %}score-high{% elif job.match_score >= 40 %}score-mid{% else %}score-low{% endif %}" style="font-size: 0.85rem; padding: 0.25rem 0.6rem;">
+                                            {{ job.match_score }}%
+                                        </span>
+                                    </div>
+
+                                    <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.82rem; color: #64748b; margin-bottom: 0.75rem; flex-wrap: wrap;">
+                                        <span style="background: #f1f5f9; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 500;">
+                                            <i class="fa-solid fa-location-dot text-danger"></i> {{ job.location }}
+                                        </span>
+                                        <span style="text-transform: uppercase; font-weight: 600; color: var(--primary);">
+                                            <i class="fa-solid fa-bolt"></i> {{ job.application_type }}
+                                        </span>
+                                    </div>
+
+                                    {% if job.matches_strongest_skill %}
+                                        <div style="margin-bottom: 0.65rem;">
+                                            <span style="background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; font-size: 0.75rem; padding: 0.2rem 0.55rem; border-radius: 4px; font-weight: 600;">
+                                                <i class="fa-solid fa-star text-warning"></i> Matches Your Strongest Skill
+                                            </span>
+                                        </div>
+                                    {% endif %}
+
+                                    {% if job.matching_skills %}
+                                        <div style="margin-bottom: 0.6rem;">
+                                            <small style="font-weight: 700; color: #16a34a;">Matching Skills:</small>
+                                            <div style="display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.2rem;">
+                                                {% for s in job.matching_skills[:4] %}
+                                                    <span class="skill-pill pill-matching" style="font-size: 0.72rem; padding: 0.15rem 0.45rem;">
+                                                        <i class="fa-solid fa-check"></i> {{ s }}
+                                                    </span>
+                                                {% endfor %}
+                                                {% if job.matching_skills|length > 4 %}
+                                                    <span style="font-size: 0.72rem; color: #64748b; align-self: center;">+{{ job.matching_skills|length - 4 }} more</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+
+                                    {% if job.missing_skills %}
+                                        <div style="margin-bottom: 0.85rem;">
+                                            <small style="font-weight: 600; color: #64748b;">Missing / To Learn:</small>
+                                            <div style="display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.2rem;">
+                                                {% for s in job.missing_skills[:3] %}
+                                                    <span class="skill-pill pill-missing" style="font-size: 0.72rem; padding: 0.15rem 0.45rem;">
+                                                        <i class="fa-solid fa-plus"></i> {{ s }}
+                                                    </span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.85rem; border-top: 1px solid var(--border-color); margin-top: 0.5rem;">
+                                    <span style="font-size: 0.8rem; color: #64748b;">
+                                        <i class="fa-solid fa-users"></i> {{ job.applicant_count }} applicant{{ 's' if job.applicant_count != 1 else '' }}
+                                    </span>
+                                    <a href="{{ url_for('jobs.job_detail', listing_id=job.id) }}" class="btn btn-sm btn-primary">
+                                        <i class="fa-solid fa-paper-plane"></i> Apply Now
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-4 text-muted">
+                    <p>No job listings near Bangalore or Hyderabad found currently.</p>
+                </div>
+            {% endif %}
+
+            <div class="mt-4 pt-3 text-center" style="border-top: 1px solid var(--border-color);">
+                <a href="{{ url_for('jobs.recommendations') }}" class="btn btn-outline-primary">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> View All {{ recommended_listings|length }} Recommended Jobs & Apply
+                </a>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- SECTION 4: CUSTOMIZED RESUME DATA ANALYSIS & CLEAR OUTPUT -->
+    <!-- ===================================================== -->
+    {% if custom_analysis %}
+    <div class="card mt-4" style="border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h3 style="margin: 0; font-size: 1.25rem;">
+                    <i class="fa-solid fa-chart-pie text-primary"></i>
+                    CUSTOMIZED RESUME DATA ANALYSIS & CLEAR OUTPUT
+                </h3>
+                <p class="text-muted mb-0" style="font-size: 0.9rem;">
+                    Detailed multi-dimensional breakdown of skills taxonomy, content volume, ATS health, and quantitative metrics.
+                </p>
+            </div>
+            <!-- Quick Export / Copy Buttons -->
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button type="button" class="btn btn-sm btn-outline-primary" id="copy-json-btn" onclick="copyAnalysisJson()">
+                    <i class="fa-regular fa-copy"></i> Copy Data JSON
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="downloadAnalysisJson()">
+                    <i class="fa-solid fa-download"></i> Export JSON
+                </button>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <!-- 4 Executive Metric Counters -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.15rem; text-align: center;">
+                    <div style="font-size: 0.82rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 0.35rem;">
+                        <i class="fa-solid fa-code text-primary"></i> Total Skills Detected
+                    </div>
+                    <div style="font-size: 1.85rem; font-weight: 800; color: #0f172a;">
+                        {{ custom_analysis.total_skills_count }}
+                    </div>
+                    <small style="color: #64748b;">Across {{ custom_analysis.categorized_skills|length }} domain categories</small>
+                </div>
+
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.15rem; text-align: center;">
+                    <div style="font-size: 0.82rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 0.35rem;">
+                        <i class="fa-solid fa-align-left text-success"></i> Word Count & Length
+                    </div>
+                    <div style="font-size: 1.85rem; font-weight: 800; color: #0f172a;">
+                        {{ custom_analysis.quantitative_metrics.word_count }}
+                    </div>
+                    <small style="color: #16a34a; font-weight: 600;">{{ custom_analysis.quantitative_metrics.length_rating }}</small>
+                </div>
+
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.15rem; text-align: center;">
+                    <div style="font-size: 0.82rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 0.35rem;">
+                        <i class="fa-solid fa-bolt text-warning"></i> Action Verbs Identified
+                    </div>
+                    <div style="font-size: 1.85rem; font-weight: 800; color: #0f172a;">
+                        {{ custom_analysis.quantitative_metrics.action_verb_count }}
+                    </div>
+                    <small style="color: #64748b;">Strong impact verbs detected</small>
+                </div>
+
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.15rem; text-align: center;">
+                    <div style="font-size: 0.82rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 0.35rem;">
+                        <i class="fa-solid fa-hashtag text-info"></i> Quantifiable Metrics
+                    </div>
+                    <div style="font-size: 1.85rem; font-weight: 800; color: #0f172a;">
+                        {{ custom_analysis.quantitative_metrics.detected_metrics|length }}
+                    </div>
+                    <small style="color: #64748b;">Numbers, % and data points</small>
+                </div>
+            </div>
+
+            <!-- View Switcher Tabs -->
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+                <button type="button" class="btn btn-sm btn-primary analysis-tab-btn active" id="btn-tab-skills" onclick="switchAnalysisTab('skills')" style="border-radius: 6px;">
+                    <i class="fa-solid fa-layer-group"></i> Categorized Skills Matrix
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary analysis-tab-btn" id="btn-tab-metrics" onclick="switchAnalysisTab('metrics')" style="border-radius: 6px;">
+                    <i class="fa-solid fa-gauge-high"></i> Quantitative & ATS Metrics
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary analysis-tab-btn" id="btn-tab-contact" onclick="switchAnalysisTab('contact')" style="border-radius: 6px;">
+                    <i class="fa-solid fa-id-card"></i> Contact & Sections
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary analysis-tab-btn" id="btn-tab-json" onclick="switchAnalysisTab('json')" style="border-radius: 6px;">
+                    <i class="fa-solid fa-code"></i> Clear JSON Output
+                </button>
+            </div>
+
+            <!-- TAB 1: Categorized Skills Matrix -->
+            <div class="analysis-pane" id="pane-skills" style="display: block;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
+                    {% for category, cat_skills in custom_analysis.categorized_skills.items() %}
+                        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.25rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                                <h4 style="font-size: 0.95rem; margin: 0; color: #0f172a; font-weight: 700;">
+                                    <i class="fa-solid fa-check-circle text-primary"></i> {{ category }}
+                                </h4>
+                                <span style="background: #e0e7ff; color: #4338ca; font-size: 0.75rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 999px;">
+                                    {{ cat_skills|length }}
+                                </span>
+                            </div>
+                            {% if cat_skills %}
+                                <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+                                    {% for sk in cat_skills %}
+                                        <span class="skill-pill pill-matching" style="font-size: 0.78rem; padding: 0.2rem 0.55rem;">
+                                            {{ sk }}
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-muted mb-0" style="font-size: 0.85rem;">No skills detected in this category.</p>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- TAB 2: Quantitative & ATS Metrics -->
+            <div class="analysis-pane" id="pane-metrics" style="display: none;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem;">
+                    <!-- Content Volume Breakdown -->
+                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.25rem;">
+                        <h4 style="font-size: 1rem; color: #0f172a; margin-bottom: 1rem;">
+                            <i class="fa-solid fa-book-open text-primary"></i> Content Volume & Readability
+                        </h4>
+                        <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.92rem; display: flex; flex-direction: column; gap: 0.65rem;">
+                            <li style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.4rem;">
+                                <span class="text-muted">Total Words:</span>
+                                <strong>{{ custom_analysis.quantitative_metrics.word_count }}</strong>
+                            </li>
+                            <li style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.4rem;">
+                                <span class="text-muted">Total Characters:</span>
+                                <strong>{{ custom_analysis.quantitative_metrics.char_count }}</strong>
+                            </li>
+                            <li style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.4rem;">
+                                <span class="text-muted">Sentences:</span>
+                                <strong>{{ custom_analysis.quantitative_metrics.sentence_count }}</strong>
+                            </li>
+                            <li style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.4rem;">
+                                <span class="text-muted">Avg. Words Per Sentence:</span>
+                                <strong>{{ custom_analysis.quantitative_metrics.avg_words_per_sentence }}</strong>
+                            </li>
+                            <li style="display: flex; justify-content: space-between;">
+                                <span class="text-muted">Estimated Reading Time:</span>
+                                <strong>{{ custom_analysis.quantitative_metrics.reading_time_sec }} seconds (~{{ ((custom_analysis.quantitative_metrics.reading_time_sec or 30) / 60)|round(1) }} min)</strong>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Action Verbs & Impact Data -->
+                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.25rem;">
+                        <h4 style="font-size: 1rem; color: #0f172a; margin-bottom: 0.75rem;">
+                            <i class="fa-solid fa-bolt text-warning"></i> Action Verbs Detected ({{ custom_analysis.quantitative_metrics.action_verb_count }})
+                        </h4>
+                        {% if custom_analysis.quantitative_metrics.detected_action_verbs %}
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 1.25rem;">
+                                {% for verb in custom_analysis.quantitative_metrics.detected_action_verbs %}
+                                    <span style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-size: 0.78rem; font-weight: 600; padding: 0.2rem 0.55rem; border-radius: 4px;">
+                                        {{ verb }}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted mb-3" style="font-size: 0.85rem;">No strong action verbs detected.</p>
+                        {% endif %}
+
+                        <h4 style="font-size: 1rem; color: #0f172a; margin-bottom: 0.75rem;">
+                            <i class="fa-solid fa-chart-line text-success"></i> Quantifiable Impact & Metrics
+                        </h4>
+                        {% if custom_analysis.quantitative_metrics.detected_metrics %}
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.35rem;">
+                                {% for metric in custom_analysis.quantitative_metrics.detected_metrics %}
+                                    <span style="background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; font-size: 0.78rem; font-weight: 600; padding: 0.2rem 0.55rem; border-radius: 4px;">
+                                        {{ metric }}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted mb-0" style="font-size: 0.85rem;">No percentage or numerical impact metrics found. Consider adding quantified achievements.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: Contact & Resume Structure -->
+            <div class="analysis-pane" id="pane-contact" style="display: none;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem;">
+                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.25rem;">
+                        <h4 style="font-size: 1rem; color: #0f172a; margin-bottom: 0.85rem;">
+                            <i class="fa-solid fa-address-card text-primary"></i> Contact & Profile Info
+                        </h4>
+                        <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.92rem; display: flex; flex-direction: column; gap: 0.65rem;">
+                            <li style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.4rem;">
+                                <span class="text-muted">Email Detected:</span>
+                                <strong>{{ custom_analysis.contact_info.email }}</strong>
+                            </li>
+                            <li style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.4rem;">
+                                <span class="text-muted">Phone Detected:</span>
+                                <strong>{{ custom_analysis.contact_info.phone }}</strong>
+                            </li>
+                            <li style="display: flex; justify-content: space-between;">
+                                <span class="text-muted">Links / Profiles:</span>
+                                {% if custom_analysis.contact_info.links %}
+                                    <span>{{ custom_analysis.contact_info.links|length }} link(s) found</span>
+                                {% else %}
+                                    <span class="text-muted">None detected</span>
+                                {% endif %}
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.25rem;">
+                        <h4 style="font-size: 1rem; color: #0f172a; margin-bottom: 0.85rem;">
+                            <i class="fa-solid fa-sitemap text-primary"></i> Resume Sections Detected
+                        </h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                            {% for section, present in custom_analysis.sections.items() %}
+                                <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.88rem; padding: 0.4rem 0.6rem; border-radius: 6px; background: {% if present %}#f0fdf4{% else %}#fef2f2{% endif %}; border: 1px solid {% if present %}#bbf7d0{% else %}#fecaca{% endif %};">
+                                    <i class="fa-solid {% if present %}fa-circle-check text-success{% else %}fa-circle-xmark text-danger{% endif %}"></i>
+                                    <span style="font-weight: 500; text-transform: capitalize;">{{ section }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: Clear Raw JSON Data Output -->
+            <div class="analysis-pane" id="pane-json" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem;">
+                    <span style="font-size: 0.88rem; color: #64748b; font-weight: 600;">
+                        <i class="fa-solid fa-code text-primary"></i> Machine-readable JSON Data Output
+                    </span>
+                    <button type="button" class="btn btn-xs btn-outline-primary" onclick="copyAnalysisJson()">
+                        <i class="fa-regular fa-copy"></i> Copy JSON
+                    </button>
+                </div>
+                <div style="background: #0f172a; border-radius: 8px; padding: 1rem; overflow-x: auto; max-height: 480px;">
+                    <pre style="margin: 0;"><code id="raw-analysis-json" style="color: #38bdf8; font-family: monospace; font-size: 0.82rem; white-space: pre-wrap; word-break: break-all;">{{ custom_analysis | tojson(indent=2) }}</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
 
     <!-- ===================================================== -->

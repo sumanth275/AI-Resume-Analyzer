@@ -1,12 +1,41 @@
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
 venv/
 env/
 ENV/
+
+# Databases
 *.db
-uploads/*.pdf
+*.sqlite
+*.sqlite3
+
+# Private uploaded resumes
+uploads/*
 !uploads/.gitkeep
+
+# Generated reports
+reports/*
+!reports/.gitkeep
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# Testing and coverage
 .pytest_cache/
 .coverage
-.env
+htmlcov/
+
+# IDE and operating system
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Temporary backups and patches
+*.patch
+*.bak
+*.backup

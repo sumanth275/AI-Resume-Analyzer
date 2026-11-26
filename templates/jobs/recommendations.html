@@ -38,13 +38,61 @@
         </div>
     </div>
 
+    <!-- Strongest Skill Recommendation Banner -->
+    {% if strongest_rec and strongest_rec.strongest_skill %}
+    <div class="card mb-4" style="border: 2px solid #4f46e5; background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);">
+        <div class="card-body" style="padding: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <span style="background: #4f46e5; color: white; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.65rem; border-radius: 999px;">
+                        <i class="fa-solid fa-star text-warning"></i> STRONGEST SKILL INSIGHT
+                    </span>
+                    <h2 style="font-size: 1.25rem; color: #0f172a; margin: 0.5rem 0 0.25rem 0;">
+                        Candidate Strongest Skill: <span style="color: #4f46e5; font-weight: 800;">{{ strongest_rec.strongest_skill }}</span>
+                    </h2>
+                    <p style="color: #334155; margin: 0; font-size: 0.95rem;">
+                        Recommended Job depending on this skill: <strong>{{ strongest_rec.recommended_role }}</strong> ({{ strongest_rec.match_percentage }}% match).
+                    </p>
+                    <p style="color: #64748b; margin: 0.25rem 0 0 0; font-size: 0.85rem;">
+                        <i class="fa-solid fa-circle-check text-success"></i> {{ strongest_rec.reason }}
+                    </p>
+                </div>
+                <a href="{{ url_for('jobs.public_jobs', search=strongest_rec.recommended_role) }}" class="btn btn-primary">
+                    <i class="fa-solid fa-bolt"></i> View {{ strongest_rec.recommended_role }} Openings
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Recommendations Grid -->
     <div class="card">
-        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="margin: 0; font-size: 1.15rem;">
-                <i class="fa-solid fa-bullseye text-primary"></i> Recommended Openings
-                <span style="font-size: 0.9rem; font-weight: normal; color: var(--secondary);">({{ recommendations|length }} matches)</span>
-            </h3>
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h3 style="margin: 0; font-size: 1.15rem;">
+                    <i class="fa-solid fa-bullseye text-primary"></i> Recommended Openings (At least 20 jobs)
+                    <span style="font-size: 0.9rem; font-weight: normal; color: var(--secondary);">({{ recommendations|length }} matches)</span>
+                </h3>
+                <small class="text-muted">Ranked by resume skill match percentage with tech hub filter</small>
+            </div>
+            <!-- Tech Hub Location Filter Tabs -->
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <a href="{{ url_for('jobs.recommendations', resume_id=selected_resume.id) }}"
+                   class="btn btn-sm {% if not selected_location %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+                   style="border-radius: 999px; font-size: 0.82rem; padding: 0.35rem 0.85rem;">
+                    All Openings ({{ all_recommendations_count or recommendations|length }})
+                </a>
+                <a href="{{ url_for('jobs.recommendations', resume_id=selected_resume.id, location='bangalore') }}"
+                   class="btn btn-sm {% if selected_location in ['bangalore', 'bengaluru'] %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+                   style="border-radius: 999px; font-size: 0.82rem; padding: 0.35rem 0.85rem;">
+                    <i class="fa-solid fa-location-dot text-danger"></i> Bangalore / Bengaluru ({{ bangalore_count }})
+                </a>
+                <a href="{{ url_for('jobs.recommendations', resume_id=selected_resume.id, location='hyderabad') }}"
+                   class="btn btn-sm {% if selected_location == 'hyderabad' %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+                   style="border-radius: 999px; font-size: 0.82rem; padding: 0.35rem 0.85rem;">
+                    <i class="fa-solid fa-location-dot text-danger"></i> Hyderabad ({{ hyderabad_count }})
+                </a>
+            </div>
         </div>
         <div class="card-body">
             {% if recommendations %}
@@ -64,6 +112,14 @@
                                         {{ rec.match_score }}%
                                     </span>
                                 </div>
+
+                                {% if rec.matches_strongest_skill %}
+                                    <div style="margin-bottom: 0.6rem;">
+                                        <span style="background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600;">
+                                            <i class="fa-solid fa-star text-warning"></i> Matches Your Strongest Skill
+                                        </span>
+                                    </div>
+                                {% endif %}
 
                                 <div style="font-size: 0.85rem; color: var(--secondary); margin-bottom: 1rem; display: flex; gap: 1rem; flex-wrap: wrap;">
                                     {% if rec.location %}

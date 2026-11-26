@@ -1,4 +1,4 @@
-import urllib.request
+﻿import urllib.request
 import urllib.parse
 import json
 import http.cookiejar
@@ -103,14 +103,30 @@ def test_live_app():
 
     resp = opener.open(req)
     result_html = resp.read().decode('utf-8')
-    assert "Match Analysis Results" in result_html or "JOB MATCH SCORE" in result_html
+    assert "Resume Analysis & Career Match Results" in result_html or "YOUR JOB DESCRIPTION MATCH" in result_html
     print("[SUCCESS] 4. Resume Upload & Job Match Analysis HTTP 200 OK")
 
     # Extract actual analysis_id from redirect URL
-    final_url = resp.geturl()
-    analysis_id = final_url.rsplit('/', 1)[1] if '/result/' in final_url else '1'
-    download_url = f"{BASE_URL}/download-report/{analysis_id}"
-    resp = opener.open(download_url)
+   =
+from urllib.parse import urlparse
+
+final_url = resp.geturl()
+path = urlparse(final_url).path.rstrip("/")
+
+print("Analysis result URL:", final_url)
+
+if "/result/" in path or "/analysis/" in path:
+    analysis_id = path.rsplit("/", 1)[-1]
+else:
+    raise AssertionError(f"Unexpected result URL: {final_url}")
+
+download_url = f"{BASE_URL}/download-report/{analysis_id}"
+print("PDF download URL:", download_url)
+
+resp = opener.open(download_url)
+print("PDF response URL:", resp.geturl())
+print("PDF Content-Type:", resp.headers.get("Content-Type"))
+
     assert resp.status == 200
     assert resp.headers.get('Content-Type') == 'application/pdf'
     pdf_report_bytes = resp.read()

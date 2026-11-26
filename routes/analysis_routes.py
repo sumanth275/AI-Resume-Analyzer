@@ -13,14 +13,21 @@ from flask import (
     send_file
 )
 
-from models.analysis_model import ResumeModel, JobModel, AnalysisModel
-from models.job_portal_model import JobApplicationModel
+from models.resume_model import ResumeModel, AnalysisModel
+from models.job_model import JobModel, JobListingModel
+from models.application_model import JobApplicationModel
 from services.pdf_parser import extract_text_from_pdf
 from services.job_matcher import (
     calculate_job_match,
     calculate_multiple_job_matches,
-    get_career_recommendation
+    get_career_recommendation,
+    get_strongest_skill_and_recommendation
 )
+from services.recommendation_engine import (
+    recommend_jobs_for_resume,
+    get_skill_gap_roadmap
+)
+from services.resume_analyzer import get_customized_resume_analysis
 from utils.validators import allowed_file
 from utils.helpers import login_required, generate_pdf_report
 
@@ -51,13 +58,44 @@ def dashboard():
     )
 
     latest_analysis = analyses[0] if analyses else None
+
+    # Resolve resume text from latest analysis or most recent uploaded resume
+    resume_text = None
+    if latest_analysis:
+        if latest_analysis.get('resume_text'):
+            resume_text = latest_analysis['resume_text']
+        else:
+            for r in resumes:
+                r_dict = dict(r) if hasattr(r, 'keys') else r
+                if r_dict.get('id') == latest_analysis.get('resume_id') and r_dict.get('resume_text'):
+                    resume_text = r_dict['resume_text']
+                    latest_analysis['resume_text'] = resume_text
+                    break
+    if not resume_text and resumes and len(resumes) > 0:
+        first_r = dict(resumes[0]) if hasattr(resumes[0], 'keys') else resumes[0]
+        if first_r.get('resume_text'):
+            resume_text = first_r['resume_text']
+
     multiple_role_results = []
-    if latest_analysis and latest_analysis.get('resume_text'):
-        multiple_role_results = calculate_multiple_job_matches(latest_analysis['resume_text'])
-    elif resumes and len(resumes) > 0 and resumes[0].get('resume_text'):
-        multiple_role_results = calculate_multiple_job_matches(resumes[0]['resume_text'])
+    if resume_text:
+        multiple_role_results = calculate_multiple_job_matches(resume_text)
 
     career_rec = get_career_recommendation(None, multiple_role_results) if multiple_role_results else None
+
+    # Real job recommendations from Recommendation Engine
+    recommended_jobs = []
+    resume_skills = []
+    if resume_text:
+        from services.skill_extractor import extract_skills
+        resume_skills = extract_skills(resume_text)
+        recommended_jobs = recommend_jobs_for_resume(resume_text=resume_text, limit=4)
+    else:
+        active_listings = JobListingModel.get_active_listings()
+        recommended_jobs = [dict(job) for job in active_listings[:4]]
+
+    applied_job_ids = {app['job_listing_id'] for app in applications}
+    strongest_rec = get_strongest_skill_and_recommendation(resume_text, multiple_role_results) if resume_text else None
+
     return render_template(
         'dashboard.html',
         resumes=resumes,
@@ -68,9 +106,12 @@ def dashboard():
         avg_match_score=avg_match_score,
         latest_analysis=latest_analysis,
         multiple_role_results=multiple_role_results,
-        career_rec=career_rec
+        career_rec=career_rec,
+        recommended_jobs=recommended_jobs,
+        applied_job_ids=applied_job_ids,
+        resume_skills=resume_skills,
+        strongest_rec=strongest_rec
     )
-
 
 
 @analysis_bp.route('/analyze-page', methods=['GET'])
@@ -130,7 +171,6 @@ def analyze():
 
     # Existing resume
     if resume_source == 'existing' and existing_resume_id:
-
         resume = ResumeModel.get_by_id(
             existing_resume_id,
             user_id
@@ -150,7 +190,6 @@ def analyze():
 
     # New resume upload
     else:
-
         if 'resume_file' not in request.files:
             flash(
                 'Please select a resume PDF file to upload.',
@@ -172,7 +211,6 @@ def analyze():
             )
 
         if file and allowed_file(file.filename):
-
             filename = secure_filename(
                 file.filename
             )
@@ -198,7 +236,6 @@ def analyze():
             file.save(filepath)
 
             try:
-
                 resume_text = extract_text_from_pdf(
                     filepath
                 )
@@ -211,7 +248,6 @@ def analyze():
                 )
 
             except sqlite3.IntegrityError:
-
                 if os.path.exists(filepath):
                     os.remove(filepath)
 
@@ -227,7 +263,6 @@ def analyze():
                 )
 
             except Exception as e:
-
                 if os.path.exists(filepath):
                     os.remove(filepath)
 
@@ -241,7 +276,6 @@ def analyze():
                 )
 
         else:
-
             flash(
                 'Invalid file format. Only PDF files are supported.',
                 'danger'
@@ -263,11 +297,6 @@ def analyze():
         results = calculate_job_match(
             resume_text,
             job_description
-        )
-
-        # Multiple predefined job role matching
-        multiple_role_results = calculate_multiple_job_matches(
-            resume_text
         )
 
         # Save main analysis
@@ -310,6 +339,7 @@ def analyze():
 
 
 @analysis_bp.route('/result/<int:analysis_id>')
+@analysis_bp.route('/analysis/<int:analysis_id>')
 @login_required
 def result(analysis_id):
 
@@ -338,12 +368,44 @@ def result(analysis_id):
         analysis['resume_text'],
         multiple_role_results
     )
+    strongest_rec = get_strongest_skill_and_recommendation(
+        analysis['resume_text'],
+        multiple_role_results
+    )
+    custom_analysis = get_customized_resume_analysis(
+        analysis['resume_text']
+    )
+
+    recommended_listings = recommend_jobs_for_resume(
+        resume_text=analysis['resume_text'],
+        limit=30
+    )
+    skill_gap_roadmap = get_skill_gap_roadmap(recommended_listings[:10])
+    bangalore_jobs = [
+        j for j in recommended_listings
+        if any(term in (j.get('location') or '').lower() for term in ['bangalore', 'bengaluru'])
+    ]
+    hyderabad_jobs = [
+        j for j in recommended_listings
+        if 'hyderabad' in (j.get('location') or '').lower()
+    ]
+    near_hub_jobs = [
+        j for j in recommended_listings
+        if any(term in (j.get('location') or '').lower() for term in ['bangalore', 'bengaluru', 'hyderabad'])
+    ]
 
     return render_template(
-        'result.html',
+        'analysis.html',
         analysis=analysis,
         multiple_role_results=multiple_role_results,
-        career_rec=career_rec
+        career_rec=career_rec,
+        strongest_rec=strongest_rec,
+        custom_analysis=custom_analysis,
+        recommended_listings=recommended_listings,
+        skill_gap_roadmap=skill_gap_roadmap,
+        bangalore_jobs=bangalore_jobs,
+        hyderabad_jobs=hyderabad_jobs,
+        near_hub_jobs=near_hub_jobs
     )
 
 
@@ -375,6 +437,14 @@ def download_report(analysis_id):
     report_filename = (
         f"Resume_Analysis_Report_{analysis_id}.pdf"
     )
+
+    reports_dir = current_app.config.get('REPORTS_FOLDER')
+    if reports_dir:
+        os.makedirs(reports_dir, exist_ok=True)
+        report_path = os.path.join(reports_dir, f"user_{user_id}_{report_filename}")
+        with open(report_path, 'wb') as f:
+            f.write(pdf_buffer.getvalue())
+        pdf_buffer.seek(0)
 
     return send_file(
         pdf_buffer,

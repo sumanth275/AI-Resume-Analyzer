@@ -1,4 +1,3 @@
-```javascript
 document.addEventListener('DOMContentLoaded', function () {
     // 1. Resume Match Score and Circular Gauge
     const scoreElement = document.getElementById('animated-score');
@@ -111,14 +110,98 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // 5. Debug Information
     console.log('Resume analysis result page loaded.');
-
-    if (scoreElement) {
-        console.log(
-            'Resume match score:',
-            scoreElement.textContent
-        );
-    }
 });
-```
+
+// Interactive Filter for Tech Hub Jobs (Bangalore & Hyderabad)
+function filterHubJobs(city) {
+    const cards = document.querySelectorAll('.hub-job-card');
+    const tabs = document.querySelectorAll('.hub-tab-btn');
+
+    tabs.forEach(t => {
+        t.classList.remove('active', 'btn-primary');
+        t.classList.add('btn-outline-secondary');
+    });
+
+    const activeTab = document.getElementById('hub-tab-' + city);
+    if (activeTab) {
+        activeTab.classList.add('active', 'btn-primary');
+        activeTab.classList.remove('btn-outline-secondary');
+    }
+
+    cards.forEach(card => {
+        const cardCity = (card.getAttribute('data-city') || '').toLowerCase();
+        if (city === 'all') {
+            card.style.display = 'flex';
+        } else if (city === 'bangalore') {
+            if (cardCity.includes('bangalore') || cardCity.includes('bengaluru')) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        } else if (city === 'hyderabad') {
+            if (cardCity.includes('hyderabad')) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        }
+    });
+}
+
+// Switch Custom Analysis View Tabs
+function switchAnalysisTab(tabName) {
+    const tabs = document.querySelectorAll('.analysis-tab-btn');
+    const panes = document.querySelectorAll('.analysis-pane');
+
+    tabs.forEach(t => {
+        t.classList.remove('active', 'btn-primary');
+        t.classList.add('btn-outline-secondary');
+    });
+    panes.forEach(p => {
+        p.style.display = 'none';
+    });
+
+    const activeBtn = document.getElementById('btn-tab-' + tabName);
+    const activePane = document.getElementById('pane-' + tabName);
+    if (activeBtn) {
+        activeBtn.classList.add('active', 'btn-primary');
+        activeBtn.classList.remove('btn-outline-secondary');
+    }
+    if (activePane) {
+        activePane.style.display = 'block';
+    }
+}
+
+// Copy JSON to Clipboard
+function copyAnalysisJson() {
+    const codeEl = document.getElementById('raw-analysis-json');
+    if (!codeEl) return;
+    navigator.clipboard.writeText(codeEl.textContent.trim()).then(function () {
+        const copyBtn = document.getElementById('copy-json-btn');
+        if (copyBtn) {
+            const originalHtml = copyBtn.innerHTML;
+            copyBtn.innerHTML = '<i class="fa-solid fa-check text-success"></i> Copied!';
+            setTimeout(function () {
+                copyBtn.innerHTML = originalHtml;
+            }, 2500);
+        }
+    }).catch(function (err) {
+        console.error('Failed to copy JSON: ', err);
+    });
+}
+
+// Download JSON file
+function downloadAnalysisJson() {
+    const codeEl = document.getElementById('raw-analysis-json');
+    if (!codeEl) return;
+    const blob = new Blob([codeEl.textContent.trim()], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'resume_analysis_data.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}

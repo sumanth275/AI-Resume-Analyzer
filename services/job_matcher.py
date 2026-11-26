@@ -1,4 +1,4 @@
-﻿from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 from services.text_processor import preprocess_text
@@ -10,14 +10,6 @@ from services.job_roles import get_job_roles, get_role_skills
 def calculate_job_match(resume_text, job_description):
     """
     Calculates the match between a resume and a specific job description.
-
-    Scores:
-    - Skill Match
-    - TF-IDF Keyword Match
-    - Resume Quality
-
-    The final score is a Resume Match / Job Fit Indicator.
-    It is NOT a probability of getting hired.
     """
 
     if not resume_text or not job_description:
@@ -40,7 +32,9 @@ def calculate_job_match(resume_text, job_description):
     processed_resume = preprocess_text(resume_text)
     processed_job = preprocess_text(job_description)
 
-    vectorizer = TfidfVectorizer(ngram_range=(1, 2))
+    vectorizer = TfidfVectorizer(
+        ngram_range=(1, 2)
+    )
 
     try:
         tfidf_matrix = vectorizer.fit_transform(
@@ -52,13 +46,16 @@ def calculate_job_match(resume_text, job_description):
             tfidf_matrix[1:2]
         )[0][0]
 
-        keyword_match_score = round(float(similarity) * 100, 1)
+        keyword_match_score = round(
+            float(similarity) * 100,
+            1
+        )
 
     except Exception:
         keyword_match_score = 0.0
 
     # ---------------------------------------------------------
-    # 2. SKILL MATCH
+    # 2. GENERAL SKILL MATCH
     # ---------------------------------------------------------
 
     resume_skills = set(
@@ -80,7 +77,10 @@ def calculate_job_match(resume_text, job_description):
         )
 
         skills_match_score = round(
-            (len(matching_skills) / len(job_skills)) * 100,
+            (
+                len(matching_skills)
+                / len(job_skills)
+            ) * 100,
             1
         )
 
@@ -95,15 +95,15 @@ def calculate_job_match(resume_text, job_description):
         skills_match_score = keyword_match_score
 
     # ---------------------------------------------------------
-    # 3. RESUME QUALITY SCORE
+    # 3. RESUME QUALITY
     # ---------------------------------------------------------
 
-    resume_score, structure_details = analyze_resume_structure(
-        resume_text
+    resume_score, structure_details = (
+        analyze_resume_structure(resume_text)
     )
 
     # ---------------------------------------------------------
-    # 4. OVERALL JOB MATCH
+    # 4. GENERAL JOB MATCH
     # ---------------------------------------------------------
 
     overall_score = (
@@ -116,10 +116,6 @@ def calculate_job_match(resume_text, job_description):
         min(100.0, max(0.0, overall_score)),
         1
     )
-
-    # ---------------------------------------------------------
-    # 5. RECOMMENDATIONS
-    # ---------------------------------------------------------
 
     recommendations = generate_recommendations(
         overall_score,
@@ -164,7 +160,6 @@ def calculate_multiple_job_matches(resume_text):
 
     job_roles = get_job_roles()
 
-    # Detect the student's current skills once.
     resume_skills = set(
         extract_skills(resume_text)
     )
@@ -181,7 +176,7 @@ def calculate_multiple_job_matches(resume_text):
         )
 
         # -----------------------------------------------------
-        # Role-specific information & required skills
+        # Role-specific required skills
         # -----------------------------------------------------
 
         role_skills = set(
@@ -270,7 +265,7 @@ def calculate_multiple_job_matches(resume_text):
         recommended_skills = generate_skill_recommendations(
             resume_skills,
             missing_role_skills,
-            role_name
+            role_name=role_name
         )
 
         # -----------------------------------------------------
@@ -279,48 +274,26 @@ def calculate_multiple_job_matches(resume_text):
 
         learning_priority = create_learning_priority(
             resume_skills,
-            recommended_skills
+            missing_role_skills
         )
 
         results.append({
-
             "job_role": role_name,
-
             "technical_skills_match_percentage": technical_skills_match_percentage,
-
             "match_score": improved_score,
-
             "resume_score": analysis["resume_score"],
-
-            "skills_match_score": analysis[
-                "skills_match_score"
-            ],
-
-            "keyword_match_score": analysis[
-                "keyword_match_score"
-            ],
-
+            "skills_match_score": analysis["skills_match_score"],
+            "keyword_match_score": analysis["keyword_match_score"],
             "skill_coverage": technical_skills_match_percentage,
-
             "role_relevance": role_relevance,
-
             "fit_level": fit_level,
-
             "why_role": why_role,
-
             "matching_skills": matching_role_skills,
-
             "missing_skills": missing_role_skills,
-
             "skills_to_improve": skills_to_improve,
-
             "recommended_skills": recommended_skills,
-
             "learning_priority": learning_priority,
-
-            "recommendations": analysis[
-                "recommendations"
-            ]
+            "recommendations": analysis["recommendations"]
         })
 
     # ---------------------------------------------------------
@@ -337,7 +310,405 @@ def calculate_multiple_job_matches(resume_text):
         reverse=True
     )
 
+    # ---------------------------------------------------------
+    # Difference from the next-best role
+    # ---------------------------------------------------------
+
+    for index, result in enumerate(results):
+        if index == 0 and len(results) > 1:
+            difference = (
+                result["technical_skills_match_percentage"]
+                - results[1]["technical_skills_match_percentage"]
+            )
+            result["difference_from_next"] = round(difference, 1)
+        else:
+            result["difference_from_next"] = 0.0
+
     return results
+
+
+# =============================================================
+# ROLE RELEVANCE
+# =============================================================
+
+def calculate_role_relevance(
+    resume_skills,
+    role_skills
+):
+    """
+    Calculates how strongly the student's
+    existing skills relate to the role.
+    """
+
+    if not role_skills:
+        return 0.0
+
+    matching = resume_skills.intersection(
+        role_skills
+    )
+
+    if not matching:
+        return 0.0
+
+    coverage = (
+        len(matching)
+        / len(role_skills)
+    ) * 100
+
+    if len(matching) >= 5:
+
+        coverage += 10
+
+    elif len(matching) >= 3:
+
+        coverage += 5
+
+    return round(
+        min(100.0, coverage),
+        1
+    )
+
+
+# =============================================================
+# FIT LEVEL
+# =============================================================
+
+def get_fit_level(score):
+
+    if score >= 80:
+        return "Excellent Fit"
+
+    elif score >= 65:
+        return "Strong Fit"
+
+    elif score >= 50:
+        return "Moderate Fit"
+
+    elif score >= 35:
+        return "Developing Fit"
+
+    return "Needs Improvement"
+
+
+# =============================================================
+# ROLE EXPLANATION
+# =============================================================
+
+def generate_role_reason(
+    role_name,
+    matching_skills,
+    score
+):
+
+    if matching_skills:
+
+        top_skills = matching_skills[:5]
+
+        skills_text = ", ".join(
+            top_skills
+        )
+
+        if score >= 65:
+
+            return (
+                f"Your resume already contains "
+                f"strong role-related skills such as "
+                f"{skills_text}."
+            )
+
+        elif score >= 50:
+
+            return (
+                f"Your resume has useful skills for "
+                f"{role_name}, including "
+                f"{skills_text}. Strengthening "
+                f"additional role-specific skills "
+                f"can improve your fit."
+            )
+
+        else:
+
+            return (
+                f"You already have some relevant "
+                f"skills such as {skills_text}. "
+                f"Building more {role_name}-specific "
+                f"skills will improve your career fit."
+            )
+
+    return (
+        f"Your current resume has limited direct "
+        f"skill coverage for {role_name}. "
+        f"Learning the core skills for this role "
+        f"is recommended."
+    )
+
+
+# =============================================================
+# SKILL RECOMMENDATION ENGINE
+# =============================================================
+
+def generate_skill_recommendations(
+    resume_skills,
+    missing_core_skills,
+    missing_supporting_skills=None,
+    role_name="this role"
+):
+    recommendations = []
+
+    if missing_supporting_skills is None:
+        missing_supporting_skills = []
+
+    # Ensure list types
+    if isinstance(missing_core_skills, (set, tuple)):
+        missing_core_skills = list(missing_core_skills)
+    if isinstance(missing_supporting_skills, (set, tuple)):
+        missing_supporting_skills = list(missing_supporting_skills)
+
+    # Core skills first
+    for skill in missing_core_skills[:5]:
+        recommendations.append(
+            f"Learn {skill} because it is a core skill for {role_name}."
+        )
+
+    # Supporting skills next
+    for skill in missing_supporting_skills[:3]:
+        recommendations.append(
+            f"Improve {skill} to strengthen your {role_name} profile."
+        )
+
+    # Resume-based recommendations
+    skill_names = {
+        skill.lower()
+        for skill in resume_skills
+    }
+
+    if "python" in skill_names:
+        recommendations.append(
+            "Build practical Python projects to demonstrate your programming skills."
+        )
+
+    if "sql" in skill_names:
+        recommendations.append(
+            "Practice SQL joins, queries and database-based projects."
+        )
+
+    if "machine learning" in skill_names:
+        recommendations.append(
+            "Build machine learning projects and practice model evaluation."
+        )
+
+    return recommendations[:10]
+
+
+# =============================================================
+# LEARNING PRIORITY
+# =============================================================
+
+def create_learning_priority(
+    resume_skills,
+    missing_core_skills,
+    missing_supporting_skills=None
+):
+    priority = []
+
+    if missing_supporting_skills is None:
+        missing_supporting_skills = []
+
+    # Ensure list types
+    if isinstance(missing_core_skills, (set, tuple)):
+        missing_core_skills = list(missing_core_skills)
+    if isinstance(missing_supporting_skills, (set, tuple)):
+        missing_supporting_skills = list(missing_supporting_skills)
+
+    # Strengthen current skills first
+    foundation_order = [
+        "Python",
+        "SQL",
+        "Git",
+        "HTML",
+        "CSS",
+        "JavaScript",
+        "Pandas",
+        "NumPy",
+        "Scikit-learn",
+        "Flask",
+        "REST API",
+        "Docker"
+    ]
+
+    normalized_resume = {
+        skill.lower()
+        for skill in resume_skills
+    }
+
+    for skill in foundation_order:
+        if skill.lower() in normalized_resume:
+            priority.append(
+                f"Strengthen {skill}"
+            )
+
+    # Then learn missing core skills
+    for skill in missing_core_skills:
+        if len(priority) >= 8:
+            break
+        priority.append(
+            f"Learn {skill}"
+        )
+
+    # Then supporting skills
+    for skill in missing_supporting_skills:
+        if len(priority) >= 8:
+            break
+        priority.append(
+            f"Learn {skill}"
+        )
+
+    return priority
+
+
+# =============================================================
+# GENERAL RESUME RECOMMENDATIONS
+# =============================================================
+
+def generate_recommendations(
+    match_score,
+    resume_score,
+    skills_score,
+    keyword_score,
+    matching_skills,
+    missing_skills,
+    structure_details
+):
+
+    recs = []
+
+    # Skills
+    if missing_skills:
+
+        top_missing = missing_skills[:5]
+
+        skills_str = ", ".join(
+            top_missing
+        )
+
+        recs.append(
+            f"Consider learning or improving "
+            f"these relevant skills: {skills_str}."
+        )
+
+    # Keyword similarity
+    if keyword_score < 60:
+
+        recs.append(
+            "Tailor your professional summary "
+            "and project descriptions using "
+            "relevant terms from the target job."
+        )
+
+    elif keyword_score < 80:
+
+        recs.append(
+            "Add more role-specific terminology "
+            "naturally to your resume."
+        )
+
+    # Resume sections
+    missing_sections = (
+        structure_details
+        .get("sections", {})
+        .get("missing", [])
+    )
+
+    if missing_sections:
+
+        sec_str = ", ".join(
+            missing_sections
+        )
+
+        recs.append(
+            f"Consider adding standard resume "
+            f"sections: {sec_str}."
+        )
+
+    # Quantitative achievements
+    impact_info = (
+        structure_details
+        .get("impact", {})
+    )
+
+    if not impact_info.get(
+        "has_metrics"
+    ):
+
+        recs.append(
+            "Add measurable project achievements "
+            "where possible, such as accuracy, "
+            "performance improvement or time saved."
+        )
+
+    # Action verbs
+    if impact_info.get(
+        "action_verb_count",
+        0
+    ) < 5:
+
+        recs.append(
+            "Use strong action verbs such as "
+            "Developed, Designed, Implemented, "
+            "Optimized and Automated."
+        )
+
+    # Contact links
+    contact_info = (
+        structure_details
+        .get("contact_info", {})
+    )
+
+    if not contact_info.get(
+        "has_link"
+    ):
+
+        recs.append(
+            "Include your LinkedIn or GitHub "
+            "portfolio link in the resume header."
+        )
+
+    # Score guidance
+    if match_score < 35:
+
+        recs.append(
+            "Major skill improvement is recommended "
+            "before applying for this role."
+        )
+
+    elif match_score < 50:
+
+        recs.append(
+            "Your resume is developing for this role. "
+            "Focus on the recommended skills and projects."
+        )
+
+    elif match_score < 65:
+
+        recs.append(
+            "You have a moderate fit. Strengthening "
+            "the missing skills can improve your match."
+        )
+
+    elif match_score < 80:
+
+        recs.append(
+            "You have a strong foundation for this role. "
+            "Continue strengthening role-specific skills."
+        )
+
+    else:
+        recs.append(
+            "Excellent alignment with the target role. "
+            "Continue building projects and measurable achievements."
+        )
+
+    return recs
 
 
 # ============================================================
@@ -363,6 +734,14 @@ ROLE_PROJECT_TYPES = {
     "Software Engineer": "build a complete software engineering project",
     "Backend Developer": "build a REST API backend project",
     "Full Stack Developer": "build a complete full-stack application",
+    "Frontend Developer": "build an interactive modern web frontend project",
+    "DevOps Engineer": "build a CI/CD and containerized deployment project",
+    "Cloud Engineer": "build a cloud infrastructure and serverless project",
+    "Cyber Security Analyst": "build a security audit and vulnerability assessment project",
+    "Database Administrator": "build a relational database schema and query tuning project",
+    "Mobile App Developer": "build a cross-platform mobile application",
+    "QA Automation Engineer": "build an automated test suite with CI/CD integration",
+    "Systems Software Engineer": "build a systems programming and memory management project",
     "AI Product Engineer": "build an AI-powered product prototype",
     "Robotics and AI Engineer": "build a robotics and AI project"
 }
@@ -385,7 +764,8 @@ def generate_career_recommendation(multiple_role_results):
                 "to_learn": []
             },
             "roadmap": [],
-            "next_best_action": None
+            "next_best_action": None,
+            "strongest_skill": None
         }
 
     top_jobs = multiple_role_results[:5]
@@ -401,32 +781,32 @@ def generate_career_recommendation(multiple_role_results):
     tools = missing_skills[2:4] if len(missing_skills) >= 4 else (missing_skills[2:] if len(missing_skills) > 2 else ["Database Systems", "Git Version Control"])
 
     role = best_job.get("job_role", "your target role")
-    match_score = best_job.get("match_score", 0)
+    match_score = best_job.get("technical_skills_match_percentage", best_job.get("match_score", 0))
 
     stage4_project_skill = ", ".join(missing_skills[:2]) if missing_skills else role
 
     roadmap = [
         {
             "stage": 1,
-            "title": "Stage 1 â€” Foundation",
+            "title": "Stage 1 — Foundation",
             "description": "Strengthen Your Foundation",
             "skills": foundation
         },
         {
             "stage": 2,
-            "title": "Stage 2 â€” Technical Specialization",
+            "title": "Stage 2 — Technical Specialization",
             "description": "Learn Role-Specific Skills",
             "skills": technical
         },
         {
             "stage": 3,
-            "title": "Stage 3 â€” Database & Tools",
+            "title": "Stage 3 — Database & Tools",
             "description": "Practice Tools and Technologies",
             "skills": tools
         },
         {
             "stage": 4,
-            "title": "Stage 4 â€” Job Preparation",
+            "title": "Stage 4 — Job Preparation",
             "description": "Build Projects and Prepare for Interviews",
             "skills": [
                 f"Build a practical project using {stage4_project_skill}",
@@ -472,7 +852,6 @@ def generate_career_recommendation(multiple_role_results):
 def get_career_recommendation(resume_text=None, multiple_role_results=None):
     """
     Return career recommendations using the existing job-match results.
-
     If results are not supplied, calculate them from the resume text.
     """
 
@@ -490,447 +869,72 @@ def get_career_recommendation(resume_text=None, multiple_role_results=None):
     return generate_career_recommendation(
         multiple_role_results
     )
-    # ---------------------------------------------------------
-    # Difference from the next-best role
-    # ---------------------------------------------------------
 
-    for index, result in enumerate(results):
 
-        if index == 0 and len(results) > 1:
+def get_strongest_skill_and_recommendation(resume_text=None, multiple_role_results=None):
+    """
+    Identifies candidate's strongest skill and recommends the best-fit job
+    depending specifically on that strongest skill.
+    """
+    if not resume_text and not multiple_role_results:
+        return {
+            "strongest_skill": None,
+            "recommended_role": None,
+            "match_percentage": 0.0,
+            "matched_skills": [],
+            "missing_skills": [],
+            "reason": "Please upload a resume to identify your strongest skill."
+        }
 
-            difference = (
-                result["technical_skills_match_percentage"]
-                - results[1]["technical_skills_match_percentage"]
-            )
+    if multiple_role_results is None and resume_text:
+        multiple_role_results = calculate_multiple_job_matches(resume_text)
 
-            result["difference_from_next"] = round(
-                difference,
-                1
-            )
+    if not multiple_role_results:
+        return {
+            "strongest_skill": None,
+            "recommended_role": None,
+            "match_percentage": 0.0,
+            "matched_skills": [],
+            "missing_skills": [],
+            "reason": "No matched roles found."
+        }
 
+    # Weight skills by how many roles they match and the rank of those roles
+    skill_weights = {}
+    for idx, role in enumerate(multiple_role_results):
+        weight = max(1, 25 - idx)
+        for s in role.get("matching_skills", []):
+            skill_weights[s] = skill_weights.get(s, 0) + weight
+
+    if not skill_weights:
+        # Fallback to skills extracted directly
+        extracted = extract_skills(resume_text) if resume_text else []
+        if extracted:
+            strongest_skill = extracted[0]
         else:
-
-            result["difference_from_next"] = 0.0
-
-    return results
-
-
-# =============================================================
-# ROLE RELEVANCE
-# =============================================================
-
-def calculate_role_relevance(
-    resume_skills,
-    role_skills
-):
-    """
-    Calculates how strongly the student's existing skills
-    relate to the selected career role.
-    """
-
-    if not role_skills:
-        return 0.0
-
-    matching = resume_skills.intersection(
-        role_skills
-    )
-
-    if not matching:
-        return 0.0
-
-    coverage = (
-        len(matching)
-        / len(role_skills)
-    ) * 100
-
-    # Small bonus when the resume has several
-    # relevant skills for the role.
-    if len(matching) >= 5:
-        coverage += 10
-
-    elif len(matching) >= 3:
-        coverage += 5
-
-    return round(
-        min(100.0, coverage),
-        1
-    )
-
-
-# =============================================================
-# FIT LEVEL
-# =============================================================
-
-def get_fit_level(score):
-    """
-    Converts the numerical score into a student-friendly
-    career-fit description.
-    """
-
-    if score >= 80:
-        return "Excellent Fit"
-
-    elif score >= 65:
-        return "Strong Fit"
-
-    elif score >= 50:
-        return "Moderate Fit"
-
-    elif score >= 35:
-        return "Developing Fit"
-
-    return "Needs Improvement"
-
-
-# =============================================================
-# ROLE EXPLANATION
-# =============================================================
-
-def generate_role_reason(
-    role_name,
-    matching_skills,
-    score
-):
-    """
-    Generates a simple explanation of why the role
-    suits the student's current resume.
-    """
-
-    if matching_skills:
-
-        top_skills = matching_skills[:5]
-
-        skills_text = ", ".join(
-            top_skills
-        )
-
-        if score >= 65:
-
-            return (
-                f"Your resume already contains strong "
-                f"role-related skills such as {skills_text}."
-            )
-
-        elif score >= 50:
-
-            return (
-                f"Your resume has useful skills for "
-                f"{role_name}, including {skills_text}, "
-                f"but additional role-specific skills "
-                f"can improve your fit."
-            )
-
-        else:
-
-            return (
-                f"You have some relevant skills such as "
-                f"{skills_text}. Building more "
-                f"{role_name}-specific skills will improve "
-                f"your career fit."
-            )
-
-    return (
-        f"Your current resume has limited direct skill "
-        f"coverage for {role_name}. Learning the core "
-        f"skills for this role is recommended."
-    )
-
-
-# =============================================================
-# SKILL RECOMMENDATION ENGINE
-# =============================================================
-
-def generate_skill_recommendations(
-    resume_skills,
-    missing_skills,
-    role_name
-):
-    """
-    Generates skill recommendations based on:
-
-    Existing resume skills
-    +
-    Missing role skills
-    +
-    Career role
-    """
-
-    if not missing_skills:
-        return [
-            "Continue strengthening your existing "
-            f"skills for {role_name}.",
-            "Build projects using your current skills.",
-            "Add measurable project achievements "
-            "to your resume."
-        ]
-
-    recommendations = []
-
-    # First recommend the most important missing skills.
-    for skill in missing_skills[:6]:
-
-        recommendations.append(
-            f"Learn {skill} to improve your "
-            f"{role_name} career fit."
-        )
-
-    # Existing-skill-based recommendations.
-    skill_names = {
-        skill.lower()
-        for skill in resume_skills
-    }
-
-    if "python" in skill_names:
-
-        recommendations.append(
-            "Build practical Python projects and "
-            "strengthen Python problem-solving."
-        )
-
-    if "sql" in skill_names:
-
-        recommendations.append(
-            "Practice SQL queries, joins, aggregation "
-            "and database projects."
-        )
-
-    if "machine learning" in skill_names:
-
-        recommendations.append(
-            "Develop machine learning projects and "
-            "practice model evaluation."
-        )
-
-    return recommendations[:10]
-
-
-# =============================================================
-# LEARNING PRIORITY
-# =============================================================
-
-def create_learning_priority(
-    resume_skills,
-    recommended_skills
-):
-    """
-    Creates a simple learning roadmap.
-
-    Existing skills are considered before completely
-    new skills so that students can build progressively.
-    """
-
-    priority = []
-
-    # Existing foundational skills.
-    foundation_order = [
-        "Python",
-        "SQL",
-        "Git",
-        "HTML",
-        "CSS",
-        "JavaScript",
-        "Pandas",
-        "NumPy",
-        "Scikit-learn",
-        "Flask",
-        "REST API",
-        "Docker"
-    ]
-
-    normalized_resume = {
-        skill.lower()
-        for skill in resume_skills
-    }
-
-    for skill in foundation_order:
-
-        if skill.lower() in normalized_resume:
-
-            priority.append(
-                f"Strengthen {skill}"
-            )
-
-    # Add missing recommendations.
-    for recommendation in recommended_skills:
-
-        if len(priority) >= 8:
-            break
-
-        priority.append(
-            recommendation
-        )
-
-    return priority
-
-
-# =============================================================
-# GENERAL RESUME RECOMMENDATIONS
-# =============================================================
-
-def generate_recommendations(
-    match_score,
-    resume_score,
-    skills_score,
-    keyword_score,
-    matching_skills,
-    missing_skills,
-    structure_details
-):
-    """
-    Generates actionable suggestions for improving
-    resume-job alignment.
-    """
-
-    recs = []
-
-    # ---------------------------------------------------------
-    # Skills
-    # ---------------------------------------------------------
-
-    if missing_skills:
-
-        top_missing = missing_skills[:5]
-
-        skills_str = ", ".join(
-            top_missing
-        )
-
-        recs.append(
-            f"Consider learning or adding relevant skills: "
-            f"{skills_str}."
-        )
-
-    # ---------------------------------------------------------
-    # Keyword similarity
-    # ---------------------------------------------------------
-
-    if keyword_score < 60:
-
-        recs.append(
-            "Tailor your professional summary and "
-            "project descriptions using relevant "
-            "terms from the target job description."
-        )
-
-    elif keyword_score < 80:
-
-        recs.append(
-            "Add more role-specific terminology "
-            "naturally to your resume."
-        )
-
-    # ---------------------------------------------------------
-    # Resume sections
-    # ---------------------------------------------------------
-
-    missing_sections = structure_details.get(
-        "sections",
-        {}
-    ).get(
-        "missing",
-        []
-    )
-
-    if missing_sections:
-
-        sec_str = ", ".join(
-            missing_sections
-        )
-
-        recs.append(
-            f"Consider adding standard resume sections: "
-            f"{sec_str}."
-        )
-
-    # ---------------------------------------------------------
-    # Quantitative achievements
-    # ---------------------------------------------------------
-
-    impact_info = structure_details.get(
-        "impact",
-        {}
-    )
-
-    if not impact_info.get(
-        "has_metrics"
-    ):
-
-        recs.append(
-            "Add measurable project achievements "
-            "where possible, such as performance "
-            "improvements, accuracy or time saved."
-        )
-
-    # ---------------------------------------------------------
-    # Action verbs
-    # ---------------------------------------------------------
-
-    if impact_info.get(
-        "action_verb_count",
-        0
-    ) < 5:
-
-        recs.append(
-            "Use strong action verbs such as "
-            "Developed, Designed, Implemented, "
-            "Optimized and Automated."
-        )
-
-    # ---------------------------------------------------------
-    # Contact links
-    # ---------------------------------------------------------
-
-    contact_info = structure_details.get(
-        "contact_info",
-        {}
-    )
-
-    if not contact_info.get(
-        "has_link"
-    ):
-
-        recs.append(
-            "Include your LinkedIn or GitHub portfolio "
-            "link in the resume header."
-        )
-
-    # ---------------------------------------------------------
-    # Overall score guidance
-    # ---------------------------------------------------------
-
-    if match_score < 35:
-
-        recs.append(
-            "Major skill improvement is recommended "
-            "before applying for this role."
-        )
-
-    elif match_score < 50:
-
-        recs.append(
-            "Your resume is developing for this role. "
-            "Focus on the recommended skills and projects."
-        )
-
-    elif match_score < 65:
-
-        recs.append(
-            "You have a moderate fit. Strengthening "
-            "the missing skills can improve your match."
-        )
-
-    elif match_score < 80:
-
-        recs.append(
-            "You have a strong foundation for this role. "
-            "Continue strengthening role-specific skills."
-        )
-
+            return {
+                "strongest_skill": None,
+                "recommended_role": multiple_role_results[0]["job_role"],
+                "match_percentage": multiple_role_results[0]["technical_skills_match_percentage"],
+                "matched_skills": multiple_role_results[0].get("matching_skills", []),
+                "missing_skills": multiple_role_results[0].get("missing_skills", []),
+                "reason": f"Recommended role: {multiple_role_results[0]['job_role']}."
+            }
     else:
+        strongest_skill = max(skill_weights.items(), key=lambda x: x[1])[0]
 
-        recs.append(
-            "Excellent alignment with the target role. "
-            "Continue building projects and measurable achievements."
-        )
+    # Find the top role where strongest_skill is present
+    matched_roles = [
+        r for r in multiple_role_results
+        if strongest_skill in r.get("matching_skills", [])
+    ]
+    target_role = matched_roles[0] if matched_roles else multiple_role_results[0]
 
-    return recs
+    return {
+        "strongest_skill": strongest_skill,
+        "recommended_role": target_role["job_role"],
+        "match_percentage": target_role.get("technical_skills_match_percentage", target_role.get("match_score", 0)),
+        "matched_skills": target_role.get("matching_skills", []),
+        "missing_skills": target_role.get("missing_skills", []),
+        "reason": f"Your strongest skill identified is {strongest_skill}. Based on this strength, {target_role['job_role']} is your recommended career path with a {target_role.get('technical_skills_match_percentage', 0)}% skill match."
+    }

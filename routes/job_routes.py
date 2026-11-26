@@ -5,11 +5,16 @@ from flask import (
     redirect,
     url_for,
     flash,
-    session,
-    abort
+    session
 )
-from models.job_portal_model import JobListingModel, JobApplicationModel
-from models.analysis_model import ResumeModel
+from models.job_model import JobListingModel
+from models.application_model import JobApplicationModel
+from models.resume_model import ResumeModel
+from services.recommendation_engine import (
+    recommend_jobs_for_resume,
+    get_skill_gap_roadmap
+)
+from services.job_matcher import get_strongest_skill_and_recommendation
 from utils.helpers import login_required, admin_required
 from utils.validators import validate_url
 
@@ -22,21 +27,21 @@ job_bp = Blueprint('jobs', __name__)
 
 @job_bp.route('/', methods=['GET'])
 def public_jobs():
-    search = request.args.get('search', '').strip()
+    search = (request.args.get('search') or request.args.get('q') or '').strip()
     location = request.args.get('location', '').strip()
 
     listings = JobListingModel.get_active_listings(search=search, location=location)
 
     recommendations = []
     applied_ids = set()
+    user_resumes = []
 
     if 'user_id' in session:
         user_id = session['user_id']
         user_resumes = ResumeModel.get_by_user(user_id)
         if user_resumes:
-            # Use most recent resume for quick recommendations
             latest_resume = user_resumes[0]
-            recommendations = JobListingModel.get_recommended_listings(
+            recommendations = recommend_jobs_for_resume(
                 resume_text=latest_resume['resume_text'],
                 limit=3
             )
@@ -45,12 +50,13 @@ def public_jobs():
         applied_ids = {app['job_listing_id'] for app in user_apps}
 
     return render_template(
-        'jobs/job_list.html',
+        'jobs.html',
         listings=listings,
         recommendations=recommendations,
         search=search,
         location=location,
-        applied_ids=applied_ids
+        applied_ids=applied_ids,
+        user_resumes=user_resumes
     )
 
 
@@ -106,20 +112,51 @@ def recommendations():
     if not selected_resume:
         selected_resume = user_resumes[0]
 
-    recommended_jobs = JobListingModel.get_recommended_listings(
+    strongest_rec = get_strongest_skill_and_recommendation(selected_resume['resume_text'])
+
+    recommended_jobs = recommend_jobs_for_resume(
         resume_text=selected_resume['resume_text'],
-        limit=10
+        limit=25
     )
+    skill_gap_roadmap = get_skill_gap_roadmap(recommended_jobs[:10])
+    location_filter = request.args.get('location', '').strip().lower()
+
+    bangalore_count = sum(
+        1 for j in recommended_jobs
+        if any(term in (j.get('location') or '').lower() for term in ['bangalore', 'bengaluru'])
+    )
+    hyderabad_count = sum(
+        1 for j in recommended_jobs
+        if 'hyderabad' in (j.get('location') or '').lower()
+    )
+
+    filtered_jobs = recommended_jobs
+    if location_filter in ['bangalore', 'bengaluru']:
+        filtered_jobs = [
+            j for j in recommended_jobs
+            if any(term in (j.get('location') or '').lower() for term in ['bangalore', 'bengaluru'])
+        ]
+    elif location_filter == 'hyderabad':
+        filtered_jobs = [
+            j for j in recommended_jobs
+            if 'hyderabad' in (j.get('location') or '').lower()
+        ]
 
     user_apps = JobApplicationModel.get_user_applications(user_id)
     applied_ids = {app['job_listing_id'] for app in user_apps}
 
     return render_template(
         'jobs/recommendations.html',
-        recommendations=recommended_jobs,
+        recommendations=filtered_jobs,
+        all_recommendations_count=len(recommended_jobs),
+        bangalore_count=bangalore_count,
+        hyderabad_count=hyderabad_count,
+        selected_location=location_filter,
         user_resumes=user_resumes,
         selected_resume=selected_resume,
-        applied_ids=applied_ids
+        applied_ids=applied_ids,
+        strongest_rec=strongest_rec,
+        skill_gap_roadmap=skill_gap_roadmap
     )
 
 
@@ -141,7 +178,6 @@ def apply_job(listing_id):
         flash('This position requires an external application. Please follow the official link.', 'warning')
         return redirect(url_for('jobs.job_detail', listing_id=listing_id))
 
-    # Check for duplicate application
     existing_app = JobApplicationModel.has_user_applied(listing_id, user_id)
     if existing_app:
         flash('You have already submitted an application for this job listing.', 'warning')
@@ -154,18 +190,26 @@ def apply_job(listing_id):
         flash('Please select one of your uploaded resumes to apply.', 'danger')
         return redirect(url_for('jobs.job_detail', listing_id=listing_id))
 
-    # Verify that the resume belongs to the logged-in user
     resume = ResumeModel.get_by_id(resume_id, user_id)
     if not resume:
         flash('Unauthorized or invalid resume selected.', 'danger')
         return redirect(url_for('jobs.job_detail', listing_id=listing_id))
+
+    scored = recommend_jobs_for_resume(
+        resume_text=resume['resume_text'],
+        active_listings=[listing],
+        limit=1
+    )
+    match_score = scored[0]['match_score'] if scored else 0.0
 
     try:
         JobApplicationModel.apply_internal(
             job_listing_id=listing_id,
             user_id=user_id,
             resume_id=resume_id,
-            cover_letter=cover_letter
+            cover_letter=cover_letter,
+            match_score=match_score,
+            is_auto_applied=0,
         )
         flash(f'Your application for "{listing["title"]}" at {listing["company"]} was successfully submitted!', 'success')
         return redirect(url_for('jobs.my_applications'))
@@ -193,8 +237,15 @@ def apply_external(listing_id):
 @login_required
 def my_applications():
     user_id = session['user_id']
-    applications = JobApplicationModel.get_user_applications(user_id)
-    return render_template('jobs/my_applications.html', applications=applications)
+    status_filter = request.args.get('status', 'all').strip().lower()
+    applications = JobApplicationModel.get_user_applications(user_id, status_filter=status_filter)
+    stats = JobApplicationModel.get_application_stats(user_id)
+    return render_template(
+        'applications.html',
+        applications=applications,
+        stats=stats,
+        status_filter=status_filter,
+    )
 
 
 # =========================================================================
@@ -221,7 +272,6 @@ def admin_create_listing():
         application_url = request.form.get('application_url', '').strip()
         is_active = 1 if request.form.get('is_active') == '1' else 0
 
-        # Validations
         if not title or not company or not description:
             flash('Title, company, and job description are required.', 'danger')
             return render_template(
@@ -248,7 +298,7 @@ def admin_create_listing():
                 )
 
         try:
-            listing_id = JobListingModel.create_listing(
+            JobListingModel.create_listing(
                 title=title,
                 company=company,
                 location=location,

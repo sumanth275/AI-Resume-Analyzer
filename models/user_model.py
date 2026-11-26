@@ -1,5 +1,6 @@
 from werkzeug.security import generate_password_hash, check_password_hash
-from database.db import get_db
+from db import get_db
+
 
 class UserModel:
     @staticmethod

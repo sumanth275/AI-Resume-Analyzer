@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}My Job Applications | AI Resume Analyzer{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrapper">
+    <!-- Header -->
+    <div class="dashboard-header mb-4">
+        <div>
+            <h1><i class="fa-solid fa-clipboard-check text-primary"></i> My Job Applications</h1>
+            <p>Track the progress, match scores, and status of your manual and AI auto-applied applications</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <a href="{{ url_for('applications.auto_apply_page') }}" class="btn btn-outline-primary">
+                <i class="fa-solid fa-robot"></i> Auto-Apply AI
+            </a>
+            <a href="{{ url_for('jobs.public_jobs') }}" class="btn btn-primary">
+                <i class="fa-solid fa-magnifying-glass"></i> Browse More Jobs
+            </a>
+        </div>
+    </div>
+
+    {% if stats is defined %}
+    <!-- Application Stats Summary -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+        <div class="card" style="margin: 0; padding: 1rem; text-align: center;">
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--dark);">{{ stats.total }}</div>
+            <div style="font-size: 0.8rem; color: var(--secondary);">Total Applications</div>
+        </div>
+        <div class="card" style="margin: 0; padding: 1rem; text-align: center;">
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--warning);">{{ stats.pending }}</div>
+            <div style="font-size: 0.8rem; color: var(--secondary);">Pending</div>
+        </div>
+        <div class="card" style="margin: 0; padding: 1rem; text-align: center;">
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--success);">{{ stats.shortlisted + stats.accepted }}</div>
+            <div style="font-size: 0.8rem; color: var(--secondary);">Shortlisted / Accepted</div>
+        </div>
+        <div class="card" style="margin: 0; padding: 1rem; text-align: center;">
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">{{ stats.auto_applied }}</div>
+            <div style="font-size: 0.8rem; color: var(--secondary);">Auto-Applied</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Applications Table -->
+    <div class="card">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <h3 style="margin: 0; font-size: 1.15rem;">
+                <i class="fa-solid fa-file-lines"></i> Submitted Applications
+                <span style="font-size: 0.9rem; font-weight: normal; color: var(--secondary);">({{ applications|length }})</span>
+            </h3>
+            <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                {% for st in ['all', 'pending', 'reviewed', 'shortlisted', 'accepted', 'rejected'] %}
+                    <a href="{{ url_for('applications.list_applications', status=st) }}"
+                       class="btn btn-sm {% if (status_filter|default('all')) == st %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+                       style="border-radius: 999px; font-size: 0.78rem; padding: 0.25rem 0.7rem;">
+                        {{ st.title() }}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if applications %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Job Title & Company</th>
+                                <th>Location</th>
+                                <th>Resume Used</th>
+                                <th>Match & Mode</th>
+                                <th>Applied Date</th>
+                                <th>Status</th>
+                                <th class="text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for app in applications %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ app.job_title }}</strong>
+                                        <div style="font-size: 0.85rem; color: var(--primary);">
+                                            <i class="fa-solid fa-building"></i> {{ app.company }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if app.location %}
+                                            <small><i class="fa-solid fa-location-dot text-muted"></i> {{ app.location }}</small>
+                                        {% else %}
+                                            <small class="text-muted">Not specified</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if app.resume_filename %}
+                                            <small><i class="fa-regular fa-file-pdf text-danger"></i> {{ app.resume_filename }}</small>
+                                        {% else %}
+                                            <small class="text-muted">Resume deleted</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if app.match_score and app.match_score > 0 %}
+                                            <span style="font-weight: 700; color: var(--primary); font-size: 0.85rem;">{{ app.match_score }}%</span>
+                                        {% else %}
+                                            <small class="text-muted">—</small>
+                                        {% endif %}
+                                        {% if app.is_auto_applied %}
+                                            <div><span style="background: #eef2ff; color: #4338ca; font-size: 0.7rem; padding: 0.1rem 0.45rem; border-radius: 4px; font-weight: 600;"><i class="fa-solid fa-robot"></i> Auto</span></div>
+                                        {% else %}
+                                            <div><span style="font-size: 0.7rem; color: var(--secondary);">Manual</span></div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ app.applied_at[:10] }}</small>
+                                    </td>
+                                    <td>
+                                        {% set st = app.status|lower %}
+                                        <span class="badge {% if st == 'accepted' or st == 'shortlisted' %}badge-success{% elif st == 'rejected' %}badge-danger{% elif st == 'reviewed' %}badge-primary{% else %}badge-warning{% endif %}" style="padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">
+                                            {{ app.status.title() }}
+                                        </span>
+                                    </td>
+                                    <td class="text-right" style="white-space: nowrap;">
+                                        <a href="{{ url_for('jobs.job_detail', listing_id=app.job_listing_id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fa-solid fa-eye"></i> View Job
+                                        </a>
+                                        {% if app.status|lower == 'pending' %}
+                                        <form action="{{ url_for('applications.withdraw_application', application_id=app.id) }}" method="POST" style="display: inline;">
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="Withdraw Pending Application" onclick="return confirm('Withdraw this pending application?');">
+                                                <i class="fa-solid fa-rotate-left"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fa-solid fa-clipboard-question empty-icon"></i>
+                    <p>You have not applied for any jobs yet.</p>
+                    <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+                        <a href="{{ url_for('applications.auto_apply_page') }}" class="btn btn-outline-primary">Try Auto-Apply AI</a>
+                        <a href="{{ url_for('jobs.public_jobs') }}" class="btn btn-primary">Find & Apply for Jobs</a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
